@@ -97,6 +97,12 @@ void botInfo::gotHelp(Player *p, Command *c)
 			{
 				sendPrivate(p, "!about (query me about my function)");
 			}
+
+			if (c->checkParam("limit"))
+			{
+				sendPrivate(p, "Sets a limit to the duel, Defaults to 10.");
+				sendPrivate(p, "Usage: !limit <new_limit>");
+			}
 		}
 	}
 }
@@ -123,10 +129,6 @@ void botInfo::gotCommand(Player *p, Command *c)
 		}
 	case OP_SuperModerator:
 		{	// SuperModerator-level commands
-			if (c->check("version"))
-			{
-				sendPrivate(p, "[name: primacy.dll] [maker: vanhelsing44@gmail.com] [version: 0.0.1]");
-			}
 		}
 	case OP_Moderator:
 		{	// Moderator-level commands
@@ -136,11 +138,9 @@ void botInfo::gotCommand(Player *p, Command *c)
 		}
 	case OP_Player:
 		{	// Player-level commands
-			if (c->check("about"))
+			if (c->check("about") || c->check("version"))
 			{
-				sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.0.1");
-				printf("Trying to move...");
-				warpTo(p, 50, 50);
+				aboutBot(p);
 			}
 
 			if (c->check("box"))
@@ -148,18 +148,17 @@ void botInfo::gotCommand(Player *p, Command *c)
 				if (isNumeric(c->final))
 				{
 					int box = atoi(c->final);
-					sendPrivate(p, "msg: is now in box " + box);
+					assignToBox(p, box);
+				}
+				else
+				{
+					sendPrivate(p, "Usage: !box <box_number>");
 				}
 			}
 
 			if (c->check("duels"))
 			{
-				sendPublic("no duels");
-			}
-
-			if (c->check("version"))
-			{
-				sendPrivate(p, "[name: primacy.dll] [maker: vanhelsing44@gmail.com] [version: 0.0.1]");
+				listDuels();
 			}
 
 			if (c->check("duel"))
@@ -172,50 +171,13 @@ void botInfo::gotCommand(Player *p, Command *c)
 				if (isNumeric(c->final))
 				{
 					int limit = atoi(c->final);
-					sendPrivate(p, "msg: point limit set to " + limit);
+					setLimit(p, limit);
 				}
-			}
-			/*
-
-			if (c->check("help"))
-			{
-				sendPrivate(p, "Hi");
-			}
-
-			if (c->check("box"))
-			{
-				int box = 1;
-				int x = 0;
-				int y = 0;
-
-				if (isNumeric(c->final))
+				else
 				{
-					box = atoi(c->final);
+					sendPrivate(p, "Usage: !limit <new_limit>");
 				}
-
-				if (box == 1)
-				{
-					x = 20;
-					y = 20;
-				}
-
-				if (box == 2)
-				{
-					x = 100;
-					y = 100;
-				}
-
-				sendPrivate(p, "msg: is now in box " + box);
-				sendPublic("testing");
-				sendPublic("*arena why?");
-				p->move(x, y);
 			}
-
-			if (c->check("check"))
-			{
-				
-			}
-			*/
 		}
 	}
 }

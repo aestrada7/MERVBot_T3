@@ -56,8 +56,19 @@ void botInfo::gotEvent(BotEvent &event)
 //////// Periodic ////////
 	case EVENT_Tick:
 		{
-			for (int i = 0; i < 4; ++i)
-				--countdown[i];
+			for(int i = 0; i < sizeof(boxes); i++)
+			{
+				if(boxes[i].timer >= 0)
+				{
+					boxes[i].timer--;
+				}
+
+				if(boxes[i].timer == 0)
+				{
+					printf("Box %i timer expired\n", i);
+					timerExpired(i);
+				}
+			}
 		}
 		break;
 //////// Arena ////////
@@ -186,6 +197,8 @@ void botInfo::gotEvent(BotEvent &event)
 				   *k = (Player*)event.p[1];
 			Uint16 bounty = (Uint16)(Uint32)event.p[2];
 			Uint16 flags = (Uint16)event.p[3];
+
+			playerKilled(p, k);
 		}
 		break;
 	case EVENT_BannerChanged:
@@ -209,6 +222,9 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 			Uint16 oldship = (Uint16)(Uint32)event.p[1];
 			Uint16 oldteam = (Uint16)(Uint32)event.p[2];
+
+			printf("Player %s changed from ship %s\n", p->name, getShipName(oldship));
+			shipChanged(p, oldship, oldteam);
 		}
 		break;
 	case EVENT_PlayerSpec:
@@ -216,6 +232,9 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 			Uint16 oldteam = (Uint16)(Uint32)event.p[1];
 			Uint16 oldship = (Uint16)(Uint32)event.p[2];
+
+			printf("Player %s changed to spec mode\n", p->name);
+			shipChanged(p, oldship, oldteam);
 		}
 		break;
 	case EVENT_PlayerTeam:
@@ -223,6 +242,9 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 			Uint16 oldteam = (Uint16)(Uint32)event.p[1];
 			Uint16 oldship = (Uint16)(Uint32)event.p[2];
+
+			printf("Player %s changed frequency from %d\n", p->name, oldteam);
+			shipChanged(p, oldship, oldteam);
 		}
 		break;
 	case EVENT_PlayerLeaving:
@@ -230,6 +252,7 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 
 			killTags(p);
+			playerLeftArena(p);
 		}
 		break;
 //////// Selfish ////////
@@ -308,9 +331,13 @@ void botInfo::gotEvent(BotEvent &event)
 
 					if(strcmp(msg, "!about") == 0)
 					{
-						printf("It was !about !!! 3\n");
-
 						Command c = Command("about");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!duels") == 0)
+					{
+						Command c = Command("duels");
 						gotCommand(p, &c);
 					}
 				}
@@ -325,6 +352,15 @@ void botInfo::gotEvent(BotEvent &event)
 				break;
 			case MSG_Private:			if (!p) break;
 				{
+					printf("Private message received\n");
+					printf("Message: %s\n", msg);
+
+					printf("From: %s\n", p->name);
+
+					if(msg[0] != '!')
+					{
+						sendPrivate(p, "I don't know wtf to do");
+					}
 				}
 				break;
 			case MSG_PlayerWarning:		if (!p) break;
@@ -588,6 +624,11 @@ void botInfo::sendPublic(char *msg)
 	tell(makeSay(MSG_Public, 0, 0, msg));
 }
 
+void botInfo::sendArena(char *msg)
+{
+	tell(makeSay(MSG_Arena, 0, 0, msg));
+}
+
 void botInfo::sendPublic(BYTE snd, char *msg)
 {
 	tell(makeSay(MSG_Public, snd, 0, msg));
@@ -624,7 +665,24 @@ void botInfo::sendRemotePrivate(char *name, char *msg)
 	sendRemotePrivate(s);
 }
 
-//////// Primacy Bot Commands ////////
+//////// Primacy Bot Auxiliary Functions ////////
+
+char *botInfo::getShipName(int id)
+{
+	switch(id)
+	{
+		case SHIP_Warbird:		return "Warbird";
+		case SHIP_Javelin:		return "Javelin";
+		case SHIP_Spider:		return "Spider";
+		case SHIP_Leviathan:	return "Leviathan";
+		case SHIP_Terrier:		return "Terrier";
+		case SHIP_Weasel:		return "Weasel";
+		case SHIP_Lancaster:	return "Lancaster";
+		case SHIP_Shark:		return "Shark";
+		case SHIP_Spectator:	return "Spectator";
+	}
+	return "";
+};
 
 void botInfo::warpTo(Player *p, int x, int y)
 {
@@ -634,4 +692,344 @@ void botInfo::warpTo(Player *p, int x, int y)
 	char *warpToMsg = &str[0];
 
 	sendPrivate(p, warpToMsg);
+}
+
+void botInfo::announceScore(int idx)
+{
+	int p1_score = boxes[idx].player_1_score;
+	int p2_score = boxes[idx].player_2_score;
+
+	std::stringstream sstm;
+	if (p1_score > p2_score)
+	{
+		sstm << p1_score << "-" << p2_score << " to " << boxes[idx].player_1->name;
+	} 
+	else if (p1_score < p2_score)
+	{
+		sstm << p2_score << "-" << p1_score << " to " << boxes[idx].player_2->name;
+	}
+	else
+	{
+		sstm << "Tied " << p1_score << "-" << p2_score;
+	}
+	std::string str = sstm.str();
+	char *msg = &str[0];
+
+	sendPrivate(boxes[idx].player_1, msg);
+	sendPrivate(boxes[idx].player_2, msg);
+}
+
+void botInfo::announceWinner(int idx)
+{
+	int p1_score = boxes[idx].player_1_score;
+	int p2_score = boxes[idx].player_2_score;
+
+	std::stringstream sstm;
+	if (p1_score > p2_score)
+	{
+		sstm << "*arena " << boxes[idx].player_1->name << " wins! " << p1_score << "-" << p2_score;
+	}
+	else if (p2_score > p1_score)
+	{
+		sstm << "*arena " << boxes[idx].player_2->name << " wins! " << p2_score << "-" << p1_score;
+	}
+	else if (p1_score == p2_score)
+	{
+		sstm << "*arena Tie! " << p1_score << "-" << p2_score;
+	}
+	std::string str = sstm.str();
+	char *msg = &str[0];
+
+	sendPublic(msg);
+
+	boxes[idx].locked = false;
+	boxes[idx].player_1 = NULL;
+	boxes[idx].player_2 = NULL;
+	boxes[idx].player_1_score = 0;
+	boxes[idx].player_2_score = 0;
+	boxes[idx].limit = 10;
+
+	std::stringstream sstmf;
+	sstmf << "*arena Box " << idx + 1 << " is now free!";
+	char *msgf = &sstmf.str()[0];
+
+	sendPublic(msg);
+}
+
+bool botInfo::enterBox(int idx, Player *p)
+{
+	if(boxes[idx].player_1 == NULL)
+	{
+		boxes[idx].player_1 = p;
+		return true;
+	}
+	else if(boxes[idx].player_2 == NULL)
+	{
+		boxes[idx].player_2 = p;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool botInfo::leaveBox(int idx, Player *p)
+{
+	if(boxes[idx].player_1 == p)
+	{
+		boxes[idx].player_1 = NULL;
+		return true;
+	}
+	else if(boxes[idx].player_2 == p)
+	{
+		boxes[idx].player_2 = NULL;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+int botInfo::playerInBox(Player *p)
+{
+	for(int i = 0; i < sizeof(boxes); i++)
+	{
+		if(boxes[i].player_1 == p || boxes[i].player_2 == p)
+		{
+			break;
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+//////// Primacy Bot Commands ////////
+
+void botInfo::assignToBox(Player *p, int selectedBox)
+{
+	printf("Attempting to assign player %s to box %d\n", p->name, selectedBox);
+	if(selectedBox > 0 && selectedBox <= sizeof(boxes))
+	{
+		int idx = selectedBox - 1;
+		int boxAssigned = enterBox(idx, p);
+		
+		if(!boxAssigned)
+		{
+			printf("Box is full!\n");
+			sendPrivate(p, "Box is full!");
+		}
+		else
+		{
+			printf("Assigned. Warping to box %d\n", selectedBox);
+			warpTo(p, boxes[idx].x, boxes[idx].y);
+			std::stringstream sstm;
+			sstm << "Box #" << selectedBox;
+			char *msg = &sstm.str()[0];
+		}
+	}
+	else
+	{
+		sendPrivate(p, "Invalid box number");
+	}
+}
+
+void botInfo::aboutBot(Player *p)
+{
+	printf("Sending !about or !version info...\n");
+	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.2.1 (2024/09/10)");
+	sendPrivate(p, "[name: primbot.dll] [vanhelsing44@gmail.com]");
+}
+
+void botInfo::listDuels()
+{
+	printf("Retrieving duels...\n");
+	bool output = false;
+
+	for(int i = 0; i < sizeof(boxes); i++)
+	{
+		if(boxes[i].locked == true)
+		{
+			output = true;
+			std::stringstream sstm;
+			sstm << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name;
+			char *msg = &sstm.str()[0];
+			sendPublic(msg);
+		}
+	}
+
+	if(!output)
+	{
+		sendPublic("*arena No duels in progress");
+	}
+}
+
+void botInfo::setLimit(Player *p, int newLimit)
+{
+	printf("Setting limit to %d\n", newLimit);
+
+	int idx = playerInBox(p);
+
+	if(idx != -1)
+	{
+		if(newLimit > boxes[idx].player_1_score && newLimit > boxes[idx].player_2_score)
+		{
+			boxes[idx].limit = newLimit;
+			std::stringstream sstm;
+			sstm << "Limit set to " << newLimit;
+			char *msg = &sstm.str()[0];
+
+			if(boxes[idx].player_1 != NULL)
+			{
+				sendPrivate(boxes[idx].player_1, msg);
+			}
+			if(boxes[idx].player_2 != NULL)
+			{
+				sendPrivate(boxes[idx].player_2, msg);
+			}
+		} else {
+			sendPrivate(p, "New limit must be greater than current score");
+		}
+	}
+	else
+	{
+		sendPrivate(p, "Not in a box. Can't change limit.");
+	}
+}
+
+
+///// Primacy Events /////
+
+void botInfo::playerKilled(Player *p, Player *k)
+{
+	printf("Player %s killed by %s\n", p->name, k->name);
+
+	int idx = playerInBox(p);
+
+	if(idx != -1)
+	{
+		std::stringstream sstmk;
+		sstmk << "You had " << k->energy << " energy when you killed " << p->name;
+		char *msgk = &sstmk.str()[0];
+
+		std::stringstream sstmp;
+		sstmp << k->name << " had " << k->energy << " energy when you died";
+		char *msgp = &sstmp.str()[0];
+
+		sendPrivate(k, msgp);
+		sendPrivate(p, msgk);
+
+		if(boxes[idx].player_1 == k)
+		{
+			boxes[idx].player_1_score += 1;
+		}
+		else if (boxes[idx].player_2 == k)
+		{
+			boxes[idx].player_2_score += 1;
+		}
+		
+		announceScore(idx);
+		setTimer(4, idx);
+		
+		if(boxes[idx].player_1_score >= boxes[idx].limit || boxes[idx].player_2_score >= boxes[idx].limit)
+		{
+			announceWinner(idx);
+		}
+	}
+}
+
+void botInfo::shipChanged(Player *p, int oldship, int oldteam)
+{
+	printf("spec or change ships\n");
+	int idx = playerInBox(p);
+
+	if(idx != -1)
+	{
+		if(boxes[idx].locked == true)
+		{
+			if(oldship != p->ship)
+			{
+				printf("%s Changed ships to %d\n", p->name, getShipName(p->ship));
+
+				if(oldship != p->ship)
+				{
+					if(p->ship != SHIP_Spectator)
+					{
+						std::stringstream sstm;
+						sstm << "*arena" << p->name << " changed ship to " << getShipName(p->ship);
+						char *msg = &sstm.str()[0];
+
+						sendPublic(msg);
+						setTimer(2, idx);
+					}
+					else
+					{
+						std::stringstream sstm;
+						sstm << "*arena" << p->name << " changed to spectator, finishing match.";
+						char *msg = &sstm.str()[0];
+
+						bool boxLeft = leaveBox(idx, p);
+						sendPublic(msg);
+						announceWinner(idx);
+					}
+				}
+			}
+
+			if(oldteam != p->team)
+			{
+				printf("Changed freq");
+				
+				if(boxes[idx].player_1->team == boxes[idx].player_2->team)
+				{
+					bool boxLeft = leaveBox(idx, p);
+					sendPrivate(boxes[idx].player_1, "Both players are on the same freq. Ending.");
+					sendPrivate(boxes[idx].player_2, "Both players are on the same freq. Ending.");
+					announceWinner(idx);
+				}
+				else
+				{
+					sendPrivate(boxes[idx].player_1, "Somebody changed freq, resetting.");
+					sendPrivate(boxes[idx].player_2, "Somebody changed freq, resetting.");
+					setTimer(2, idx);
+				}
+			}
+		}
+	}
+}
+
+void botInfo::playerLeftArena(Player *p)
+{
+	int idx = playerInBox(p);
+	
+	if(idx != -1)
+	{
+		bool boxLeft = leaveBox(idx, p);
+
+		if(boxLeft)
+		{
+			std::stringstream sstm;
+			sstm << "*arena"<< p->name << " left the arena";
+			char *msg = &sstm.str()[0];
+
+			sendPublic(msg);
+			announceWinner(idx);
+		}
+	}
+}
+
+void botInfo::setTimer(int secs, int idx)
+{
+	boxes[idx].timer = secs;
+}
+
+void botInfo::timerExpired(int idx)
+{
+	if(idx != -1)
+	{
+		warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
+		warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
+		boxes[idx].timer = -1;
+	}
 }

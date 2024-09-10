@@ -31,6 +31,7 @@ class BoxData
 		int player_1_score;
 		int player_2_score;
 		int limit;
+		int timer;
 		bool locked;
 };
 
@@ -96,6 +97,7 @@ public:
 		boxes[0].player_1_score = 0;
 		boxes[0].player_2_score = 0;
 		boxes[0].limit = 10;
+		boxes[0].timer = 0;
 		boxes[0].locked = false;
 		boxes[1].x = 180;
 		boxes[1].y = 1;
@@ -108,6 +110,7 @@ public:
 		boxes[1].player_1_score = 0;
 		boxes[1].player_2_score = 0;
 		boxes[1].limit = 10;
+		boxes[1].timer = 0;
 		boxes[1].locked = false;
 		boxes[2].x = 180;
 		boxes[2].y = 480;
@@ -120,6 +123,7 @@ public:
 		boxes[2].player_1_score = 0;
 		boxes[2].player_2_score = 0;
 		boxes[2].limit = 10;
+		boxes[2].timer = 0;
 		boxes[2].locked = false;
 	}
 
@@ -146,6 +150,7 @@ public:
 
 	void sendPublic(char *msg);
 	void sendPublic(BYTE snd, char *msg);
+	void sendArena(char *msg);
 
 	void sendPublicMacro(char *msg);
 	void sendPublicMacro(BYTE snd, char *msg);
@@ -159,7 +164,25 @@ public:
 	void gotRemoteHelp(char *p, Command *c, Operator_Level l);
 	void gotRemote(char *p, Command *c, Operator_Level l);
 
+	char *getShipName(int ship);
 	void warpTo(Player *p, int x, int y);
+	void announceScore(int idx);
+	void announceWinner(int idx);
+	bool enterBox(int idx, Player *p);
+	bool leaveBox(int idx, Player *p);
+	int playerInBox(Player *p);
+
+	void assignToBox(Player *p, int selectedBox);
+	void aboutBot(Player *p);
+	void listDuels();
+	void setLimit(Player *p, int newLimit);
+
+	void playerKilled(Player *p, Player *k);
+	void shipChanged(Player *p, int oldship, int oldteam);
+	void playerLeftArena(Player *p);
+
+	void setTimer(int secs, int idx);
+	void timerExpired(int idx);
 };
 
 
