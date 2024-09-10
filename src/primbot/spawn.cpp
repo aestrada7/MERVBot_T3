@@ -286,6 +286,8 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[2];
 			char *msg = (char*)event.p[3];
 
+			printf("Chat event received\n");
+
 			switch (type)
 			{
 			case MSG_Arena:
@@ -298,6 +300,16 @@ void botInfo::gotEvent(BotEvent &event)
 				break;
 			case MSG_Public:			if (!p) break;
 				{
+					printf("Public message received\n");
+					printf("Message: %s\n", msg);
+
+					if(strcmp(msg, "!about") == 0)
+					{
+						printf("It was !about !!!\n");
+
+						Command c = Command("about");
+						gotCommand(p, &c);
+					}
 				}
 				break;
 			case MSG_Team:				if (!p) break;

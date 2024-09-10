@@ -125,7 +125,7 @@ void botInfo::gotCommand(Player *p, Command *c)
 		{	// SuperModerator-level commands
 			if (c->check("version"))
 			{
-				sendPrivate(p, "[name:default.dll] [maker:cat02e@fsu.edu] [build:8]");
+				sendPrivate(p, "[name: primacy.dll] [maker: vanhelsing44@gmail.com] [version: 0.0.1]");
 			}
 		}
 	case OP_Moderator:
@@ -138,8 +138,82 @@ void botInfo::gotCommand(Player *p, Command *c)
 		{	// Player-level commands
 			if (c->check("about"))
 			{
-				sendPrivate(p, "I am a plain vanilla flavored bot.  Yup, just as plain and useless as can be.");
+				sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.0.1");
 			}
+
+			if (c->check("box"))
+			{
+				if (isNumeric(c->final))
+				{
+					int box = atoi(c->final);
+					sendPrivate(p, "msg: is now in box " + box);
+				}
+			}
+
+			if (c->check("duels"))
+			{
+				sendPublic("no duels");
+			}
+
+			if (c->check("version"))
+			{
+				sendPrivate(p, "[name: primacy.dll] [maker: vanhelsing44@gmail.com] [version: 0.0.1]");
+			}
+
+			if (c->check("duel"))
+			{
+				sendPublic("no duels");
+			}
+
+			if (c->check("limit"))
+			{
+				if (isNumeric(c->final))
+				{
+					int limit = atoi(c->final);
+					sendPrivate(p, "msg: point limit set to " + limit);
+				}
+			}
+			/*
+
+			if (c->check("help"))
+			{
+				sendPrivate(p, "Hi");
+			}
+
+			if (c->check("box"))
+			{
+				int box = 1;
+				int x = 0;
+				int y = 0;
+
+				if (isNumeric(c->final))
+				{
+					box = atoi(c->final);
+				}
+
+				if (box == 1)
+				{
+					x = 20;
+					y = 20;
+				}
+
+				if (box == 2)
+				{
+					x = 100;
+					y = 100;
+				}
+
+				sendPrivate(p, "msg: is now in box " + box);
+				sendPublic("testing");
+				sendPublic("*arena why?");
+				p->move(x, y);
+			}
+
+			if (c->check("check"))
+			{
+				
+			}
+			*/
 		}
 	}
 }

@@ -17,6 +17,23 @@ struct PlayerTag
 	int data;
 };
 
+class BoxData
+{
+	public:
+		int x;
+		int y;
+		int p1_safe_x;
+		int p1_safe_y;
+		int p2_safe_x;
+		int p2_safe_y;
+		Player *player_1;
+		Player *player_2;
+		int player_1_score;
+		int player_2_score;
+		int limit;
+		bool locked;
+};
+
 #define MAX_OBJECTS 20
 
 class botInfo
@@ -47,6 +64,7 @@ class botInfo
 	int countdown[4];
 
 	// Put bot data here
+	BoxData boxes[3];
 
 public:
 	botInfo(CALL_HANDLE given)
@@ -67,6 +85,42 @@ public:
 		object_dest = NULL;
 
 		// Put initial values here
+		boxes[0].x = 500;
+		boxes[0].y = 819;
+		boxes[0].p1_safe_x = 399;
+		boxes[0].p1_safe_y = 819;
+		boxes[0].p2_safe_x = 586;
+		boxes[0].p2_safe_y = 819;
+		boxes[0].player_1 = NULL;
+		boxes[0].player_2 = NULL;
+		boxes[0].player_1_score = 0;
+		boxes[0].player_2_score = 0;
+		boxes[0].limit = 10;
+		boxes[0].locked = false;
+		boxes[1].x = 180;
+		boxes[1].y = 1;
+		boxes[1].p1_safe_x = 92;
+		boxes[1].p1_safe_y = 1;
+		boxes[1].p2_safe_x = 279;
+		boxes[1].p2_safe_y = 1;
+		boxes[1].player_1 = NULL;
+		boxes[1].player_2 = NULL;
+		boxes[1].player_1_score = 0;
+		boxes[1].player_2_score = 0;
+		boxes[1].limit = 10;
+		boxes[1].locked = false;
+		boxes[2].x = 180;
+		boxes[2].y = 480;
+		boxes[2].p1_safe_x = 92;
+		boxes[2].p1_safe_y = 482;
+		boxes[2].p2_safe_x = 279;
+		boxes[2].p2_safe_y = 482;
+		boxes[2].player_1 = NULL;
+		boxes[2].player_2 = NULL;
+		boxes[2].player_1_score = 0;
+		boxes[2].player_2_score = 0;
+		boxes[2].limit = 10;
+		boxes[2].locked = false;
 	}
 
 	void clear_objects();
