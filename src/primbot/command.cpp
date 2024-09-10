@@ -139,6 +139,8 @@ void botInfo::gotCommand(Player *p, Command *c)
 			if (c->check("about"))
 			{
 				sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.0.1");
+				printf("Trying to move...");
+				warpTo(p, 50, 50);
 			}
 
 			if (c->check("box"))

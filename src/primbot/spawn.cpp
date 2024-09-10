@@ -8,6 +8,9 @@
 #include "..\player.cpp"
 #include "..\commtypes.cpp"
 
+#include <string.h>
+#include <sstream>
+
 #define UNASSIGNED 0xffff
 
 
@@ -305,7 +308,7 @@ void botInfo::gotEvent(BotEvent &event)
 
 					if(strcmp(msg, "!about") == 0)
 					{
-						printf("It was !about !!!\n");
+						printf("It was !about !!! 3\n");
 
 						Command c = Command("about");
 						gotCommand(p, &c);
@@ -619,4 +622,16 @@ void botInfo::sendRemotePrivate(char *name, char *msg)
 	s += msg;
 
 	sendRemotePrivate(s);
+}
+
+//////// Primacy Bot Commands ////////
+
+void botInfo::warpTo(Player *p, int x, int y)
+{
+	std::stringstream sstm;
+	sstm << "*warpto " << x << " " << y;
+	std::string str = sstm.str();
+	char *warpToMsg = &str[0];
+
+	sendPrivate(p, warpToMsg);
 }

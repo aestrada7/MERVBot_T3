@@ -158,6 +158,8 @@ public:
 	void gotCommand(Player *p, Command *c);
 	void gotRemoteHelp(char *p, Command *c, Operator_Level l);
 	void gotRemote(char *p, Command *c, Operator_Level l);
+
+	void warpTo(Player *p, int x, int y);
 };
 
 
