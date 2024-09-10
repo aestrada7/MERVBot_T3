@@ -1,0 +1,515 @@
+MERVBot Progress
+
+
+----=To Do=----
+
+more smooth sailing on calm seas
+
+
+----=History=----
+
+6/3/06 - Rewrote algorithms.cpp : trimString() because Cyan~Fire said it wasn't working.
+
+9/12/05 - And fixed said support.
+
+9/7/05 - Added support to plugins for players to send !help messages from other arenas.
+
+8/2/05 - Fixed plugin-generated arena changes so that the arena name is updated in the 'botInfo'.
+
+7/23/05 - Added support for mixed-mode C++ plugins (see botdll.cpp comments for more info).
+          Changed String::split behaviour to clear string and return what it used to be when splitting identifier is not found.
+
+7/22/05 - Added support for creation parameter string to plugins.
+
+7/21/05 - Bot now neuts flags when it gets them, instead of dropping.
+          Added MapLoaded B2D event.
+
+3/25/05 - Fixed a bug in, of all places, the keystream generator for encryption!  Thanks to Cyan~Fire:)
+          -- Release marker 46
+
+10/24/04 - Added !restart, and a change to class String for MMaverick@17thparallel.com
+
+10/2/04 - Fixed a VS.NET bug that was triggered by Cyan~Fire's changes.
+          This was causing !listop to crash the bot, for example.
+          -- Release marker 45
+
+8/4/04 - Merged code from Cyan~Fire to allow MERVBot code to compile in Dev-C++
+
+7/27/04 - Fixed a bug in !load, that would not send arena settings to loaded plugins.
+            I assume this has been causing the antiwarp bug and friends.
+
+7/17/04 - Worked a little on the antiwarp bug
+
+7/5/04 - CypherJF wanted a new bot2dll event, EVENT_BannerChanged to notify of players changing banners.
+         -- Release marker 44 (DLL 6.7)
+
+6/30/04 - Dustpuppy found and fixed problems in the bitfields of clientprot.h
+          -- Release marker 43
+
+6/4/04 - 50% Packetloss found and fixed problems in the weaponInfo structure, sent with position packets.
+         He also noticed that the Player::flash variable wasn't being initialized.
+         And that NoisySpectator wasn't being noisy enough.
+         -- Release marker 42
+
+5/23/04 - 50% Packetloss reported a possible problem with default chat channel settings.
+
+5/1/04 - Invader Zim reported a problem in settings.h Radius bitfield position, and added support for Me->flash from plugins.
+
+4/11/04 - MMaverick requested a new MERVBot.INI variable: InitialChatChannels.
+
+4/10/04 - Smooth sailing, on calm seas.
+
+4/6/04 - Fixed some operator security bugs indicated on the fourms by Maverick (17th)
+
+3/28/04 - Changing arenas works in ASSS.
+          Starts sending position packets a little later (after first sec.chk), to work better with ASSS object protocol.
+          Fixed MaxConnectionTries
+          Fixed ASSS compat. for some other potential changes in the server
+          -- Release marker 41
+
+3/17/04 - Added MaxConnectionTries to MERVBot.INI; prevents bots from tripping flood protection.
+          Added support for 00 0e clusters before connections are established.
+
+3/16/04 - Added enhancements from Invader-Zim from Gundam Wing:
+           Now supports up to 32 plugins at a time
+           --> Plugins crashing will no longer crash the bot too, when in "Release mode"
+          -- Release marker 40
+
+2/24/04 - No longer needs the SUBSPACE.BIN file to send security checksums.
+
+2/1/04 - SMod: !listspawns !uptime
+
+1/5/04 - Someone on the forum requested that operators.txt accept Limited-ops.
+
+1/1/04 - 50%ploss: move EVENT_ArenaLeave event before sending packet to server,
+                      meaning that the plugins can send chat messages in response.
+
+12/19/03 - Added another improvement by 50%packetloss, to delay clearing the flag list
+              on a victory until after the plugins have had a chance to see where the flags were.
+           -- Release marker 39pr-2
+
+12/16/03 - FiftyPacketloss found an invalid flag pointer being sent to the plugins.
+           1stStrike donated some webspace: http://catid.ssihosting.com
+
+12/10/03 - FiftyPacketloss found a bug in the new plugin2core EVENT_GrabBall.  Merry x-mas
+           Website is down so this release will be delayed.
+
+11/30/03 - Flag victory rewards are now only given to players outside safety zone.
+
+10/25/03 - Did a better job with the 127.x.x.x
+
+10/21/03 - VIP access is now interpreted properly when the bot connects to the server.
+           (no more "Super Moderator+ access is required to remain connected in this zone.")
+
+10/19/03 - Wormholes and asteroids and such are now tiled for convenience of the plugins.
+           Audited flag system
+           DLL core version 6.6: Update for protocol enhancements
+           EVENT_ToggleObjects Bot->DLL now uses more efficient protocol that has become available recently.
+           Added EVENT_MoveObjects Bot->DLL for using the new LVZ move protocol.
+           Added EVENT_GrabBall Bot->DLL
+           Added EVENT_FireBall Bot->DLL
+           -- Release marker 39pre
+
+10/18/03 - Reversed thors with shrapnel to bullets, cuz it broke some plugins.
+           Connects to 127.0.0.x, so you can host up to 768 bots local to the server from one EXE.
+           Updated the README.
+
+9/9/03 - Fixed bug on Flag Victory and Flag Reset: Player flag counts were not reset to 0
+
+8/21/03 - Applied a patch by OmegaFirebolt for !listchat and !clearchat
+          Fixed a bug where the bot would get caught in a loop with the server during high c2s packet loss
+              Being at U and hosting a bot for some people helped to discover this
+
+8/20/03 - Second semester of college starts in a week
+          Applied a patch by OmegaFirebolt to have !read also re-read the Operators.txt file
+          Compiling the core in debug mode now removes the exception catching blocks around the command interpreter (DLL's also)
+             If you're having trouble finding where a DLL !command is crashing, i recommend turning on debug mode in both
+             the plugin and the core.  When the exception is generated, your debugger will jump right to the offending statement.
+          Bot now shoots thors with shrapnel when it's a sysop, etc.
+          Renamed !lag command to !botlag (original command name was too generic)
+
+7/27/03 - Small fix: when players die, number of transferred flags are now from packet data, not player data.
+          Small fix: s2c 00 0b "cancel download" packet now properly handled.
+          Fixed a crash bug: unchecked return value of 'new' operator during map decompression could lead to application death.
+          Fixed poisoned map file vulnerability: now using zlib version 1.1.4
+          -- Release marker 38
+
+7/26/03 - Fix: ship changes sent in the SetFrequency(0d) packet are now handled properly.
+          Small fix: timer code now correct when ping exceeds 6 seconds.
+
+4/6/03 - Added *flagreset to plugins. (thanks to k0zy)
+          -- Release marker 37
+
+3/8/03 - DLL minor version increased for DeadlySoldier!!'s bounty-race bot.
+         Fixed player bounties not being increased after kills. Thanks to DeadlySoldier!!.
+
+3/1/03 - Fixed *watchdamage support for direct-action shrapnel.
+         Added new INI option: [MISC]NoisySpectator=1 will allow plugins to see item counts, but sends more packets.
+
+2/23/03 - Added *watchdamage to bot core and plugins.
+          -- Release marker 36
+
+1/20/03 - Recompiled all my plugins, updated e-mail address.
+          Apparently that was sufficient to re-synch the plugins with the core.
+          -- Release marker 35
+
+12/29/02 - Fix: The item count for portals is now copied properly from the position packets. Thanks to Jason.
+           -- Release marker 34
+
+12/14/02 - Fix: Players changing teams get their flag counts reset.  Thanks to Sean.
+           -- Release marker 33
+           Increased maximum loadable DLL plugins to 10.
+           Fix: [MISC]ForceContinuum=1 will now allow you to connect in case SubSpace cannot enter even in VIP.TXT.
+                There are still some issues to be worked out, it's just a quick fix for now.  REQUIRES SYSOP.
+
+8/30/02 - Fix: Chat messages over 250 chars in length were DC'ing the bot.
+          -- Release marker 32
+
+8/18/02 - Fix: KoTH and Turreting is now handled properly when the bot first enters.
+          Clarified docs for !spawn command.
+
+8/14/02 - Fix: Flying bots now fly in spectator mode also.
+          Even more reliable player position gathering.
+          -- Release marker 31
+
+8/13/02 - Leaving soon, not much time for updates.
+          Fix: RemotePrivate and Channel messages are now heard by the DLL's again.
+
+8/9/02 - Removed powerball debug messages.
+         Bot now unattaches when the tank presses F7.
+
+8/4/02 - Added ?setsettings protocol to the core
+         DLL core version 6.2: Update for bots that change settings.
+             DLL2Bot EVENT_ChangeSettings, uses efficient ?setsettings protocol
+         Fixed *putfile functionality in the core.
+         *putfile is now using the /get directory as its home.
+         Fixed possible problem with *getfile in the core.
+         Powerball velocity now gets set to 0, when it's carried.
+          -- Release marker 30
+
+8/2/02 - Implemented flag bounty multiplier.
+         RegForm HardwareId data now sent properly once more.
+
+8/1/02 - Fixed an illegal operation while filling in the regform.
+         DLL core version 6.1: Update for flag-moving bots
+             DLL2Bot EVENT_SendPosition + boolean: reliable
+             This is backwards-compatible.  Optional for bots that move flags.
+         Changed commtypes.cpp so Visual Studio 6.0 can compile it.
+          -- Release marker 29
+
+7/30/02 - Object toggling enabled in the core. Uses *objon and *objoff (temp)
+          Time synchronization is now using the same code as SubSpace.
+
+7/29/02 - Fixed object toggle handler.
+          DLL core version 6.1: Update for LVZ object handling.
+             Added b2d EVENT_ObjectToggled and d2b EVENT_ToggleObjects
+             Added b2d EVENT_BrickDropped
+             Added brickList to EVENT_Init
+          Fixed minor memory leak in decompression function.
+          Added packet generator for taking greens.
+          Object toggling doesn't actually work yet. The framework is ready.
+          -- Release marker 28 (skipped 27 to avoid confusion)
+
+7/25/02 - !lag statistics are now displayed in the proper units.
+          Turf flags are recognized by the bot a lot sooner.
+          Turf flag coords are sent to the DLL's a lot sooner.
+          Updated knowledge of s2c protocol. (bored)
+          -- Release marker 26
+
+7/24/02 - Added bounty to EVENT_PlayerDeath
+          -- Release marker 25
+
+7/23/02 - DLL core version 6.0: Update since you can !load 5 plugins.
+             Got rid of p->tags[]
+          Fixed spectating bug when there is only one player in the arena.
+          -- Release marker 24
+
+7/22/02 - You may now have more than one plugin on a bot.
+          Fixed security hole in remote private messages.
+          ?chat messages are now interpreted as :remote: commands.
+          DLL2Bot EVENT_FireWeapon will now allow you to write attack bots.
+          -- Release marker 23
+
+7/19/02 - Fixed a crash condition involving bricks.
+          More position packets are sent based on number of players.
+
+7/18/02 - Fixed the Bot2DLL EVENT_Init map parameter.
+
+7/17/02 - Fixed the !unload command to free loaded libraries.
+          Fixed team private messages.  Both DLL's and core's will work.
+          EVENT_PlayerMove generated on a *warpto to the bot now.
+          Added a whole mess of new DLL2Bot2DLL messages.  Enjoy.
+          Added new INI option: [Misc]DisablePubCommands.
+          -- Release marker 22
+
+7/16/02 - Fixed remote !go bug.  Bot arena is now updated.
+          Fixed checksum bug involving signed/unsigned issues.
+          Moved all file access over to STL.
+          Started compressing EXE's with UPX.
+          Fixed crash bug caused by reading beyond position packet buffers.
+          Fixed similar bugs.
+          Added checks against some unchecked buffers.
+          UPX apparently triggers Norton's virus checker, stopped using it.
+          -- Release marker 20
+          Added old ship & team to EVENT_PlayerShip, PlayerTeam and PlayerSpec.
+          Added EVENT_Team so the plugins can change their team.
+          Fixed flag count bug.  It wasn't being reset when players spectate.
+          -- Release marker 21
+
+7/14/02 - Removed a lot of unnecessary garbage from the code.
+
+7/13/02 - Added boolean: biller online to EVENT_ArenaEnter. Upgraded my plugins.
+          Changed !alias !killalias !listalias to !setcmd !killcmd !listcmd.
+          !listcmd control paths now all report something to the operator.
+          -- Release marker 19
+
+7/10/02 - Added old team to EVENT_PlayerTeam for plugins. Upgraded my plugins.
+          Fixed crash bug.  Hopefully all is good now with the arena names.
+          !say now interprets %sounds.
+          Removed some String functionality just in case.
+          -- Release marker 18
+
+6/21/02 - Fixed flag accumulation bug when users normally drop flags. (SOS)
+
+5/26/02 - Fixed position packet delay thanks to Snrrrub.
+
+4/28/02 - Settings changes: Ship radius is at byte 33, signed DoorMode.
+
+4/27/02 - It was too soon.  Class String needed to be fixed.
+          SysOp/SMod detection was broken, fixed. (Thanks to N)
+          Updated the F.A.Q. to deal with new SERVER.INI Ctm-only setting.
+          -- Release marker 17
+
+4/22/02 - Merged source tree from my laptop:
+          Cleaned up turret algorithm in hack.cpp.
+          Fixed host.cpp turret bug when the bot is firing while mobile.
+          Continuum version constant to 37.
+          Cleaned up datatypes.cpp class String, especially *trim().
+          Added Snrrrub's C++ version of level checksum to checksum.cpp.
+          Optimized memory allocation for class String (too soon?)
+
+4/20/02 - Added shipSettings::Radius.  Thanks to SOS for this find.
+          Increased transfer size limit for chunked packet handler.
+
+4/3/02 - Fixed shipSettings' max shrap & shrap rate variables (SOS).
+
+4/1/02 - Turf FlagMoves are now sent for turf flags to the DLL-plugins.
+         Hopefully fixed !go # for public arenas.
+
+3/31/02 - Better detection of a loopback host for added accuracy.
+
+3/30/02 - Fewer in-game events get logged to the terminal now.
+          DLL-plugins now get an ArenaLeave event on disconnection also.
+          DLL-plugins may now send an EVENT_SpawnBot to create new bots.
+          DLL-plugins may now send an EVENT_ChangeArena to self-!go.
+          Added option to INI: [MISC]NoTerminal to speed up the bot.
+          -- Release marker 16
+
+3/24/02 - Added SOS-land to the source. (bot->dll turf claiming now)
+          fileAccess::readLine() buffer overflow fixed.
+          Updated '!help close' documentation.
+
+3/23/02 - Added zlibdll.lib to the release zip file.
+          Fixed a major problem in String comparison created 3/19/02.
+          Changed !zone command reference to say '!zone'
+          Fixed another crash bug in registration form fill-out.
+          Fixed critical arena-changing bug.
+
+3/22/02 - Fixed turf games' flag destruction.
+          Added support for object toggling.  Both submitted by SOS.
+          Fixed crash bug when operator.txt op level is invalid.
+
+3/21/02 - Fixed the crash bug, it was a buffer overflow in hostMessage.
+          Added support for turret detach protocol, forgot about that..
+
+3/20/02 - Fixed a crash when no DLL is loaded.
+
+3/19/02 - Cleaned up class String.
+
+3/18/02 - Built a windows box for development on projects like MERVBot.
+          Started working on the login crash.
+          In light of the recent zlib bug, I've set all delete []'d
+          buffers to NULL :)
+
+1/25/02 - *relkill -> *relkills, oops.  Envil;) reported this one.
+
+1/18/02 - Started work on fixing reported crash bugs.
+          Bot no longer closes when all spawns are closed.
+
+1/12/02 - Added some DLL->Bot callback features!
+          -> Ship, Flag Get/Drop, SendPos and the Me pointer.
+          Removed some #include's from the source, ho-hum.
+
+1/11/02 - !go bug squashed.
+          Law of sines used in place of linear algebra for auto-turreting,
+          more promising but more complicated programmatically.  Sort-of works.
+
+1/10/02 - Moved to IPPROTO_UDP from IPPROTO_IP, hopefully this should resolve
+          any conflicts with other running SubSpace clients.
+          U.S.F. accepted my app.
+
+1/7/02 - School has started again.  I will try to get the !go bug fixed ASAP.
+         Added !unload command to disconnect DLL plugins.
+         !version is now a moderator command, so that !maker will show DLL specs.
+
+1/6/02 - Revised most of the basic classes to help squash a bug.
+         Bot's use of spectator requests is now more efficient.
+         Bot now uses subfolders to store data files.
+         DLL API v4.0 declared, as a result of changes to class Player.
+
+1/5/02 - Bot now keeps track of flags properly.
+         !awarp command to toggle bot's antiwarp.
+         News file is no longer downloaded twice at odd times.
+
+1/4/02 - Finished DLL API version 3.0.  Hooked all the new events.
+         On disconnection, bot now knows which arena and ship to use.
+         Added optional Logins.txt for a list of successful logins.
+         Fixed bug where bot thought it was in an arena between arenas.
+         Streamlined packet posting further with postRR() and postRU().
+         Fixed bug where bot occasionally got stuck downloading map file.
+
+1/3/02 - Fixed bug where multiple instances of the same DLL spawn conflict.
+         Fixed bug where too many chat message events were sent to the DLL.
+         Started work on the elimination referee.
+         isNumeric() now recognizes negative numbers.  Added getInteger().
+         Added !log [count].  You can see the terminal in-game as an Owner.
+
+1/2/02 - Default.dll project completed.  Finally uploaded to my website.
+         U.N.F. accepted my application, 2fer.
+         Differentiated between zones with custom SUBSPACE.EXE and Ctm-only.
+         Fixed a bug where the bot was only spectating player #0.  Oops.
+         Removed RegName and RegOrg from !info.  Oops.
+
+1/1/02 - MERVBot now fills in the registration form completely under Win9x/ME.
+
+12/28/01 - DLL responses are now routed back to Host.
+
+12/27/01 - DLL core works well now; I need to route the responses back to Host.
+
+12/25/01 - On the first day of Christmas my UPS man sent to me, an acceptance
+           letter from F.I.T.
+
+12/23/01 - Restarted work on DLL core.  Some really annoying bugs there.
+           MDI has an updating bug, global messages have a rendering bug.
+           Fixed a bug in !listalias I created recently.
+           When |timeDiff| < 5, timeDiff = 0.  It's assumed that it's local.
+
+12/22/01 - Fixed a bug in class String, more intelligent resizing.
+           Recoded MDI with a new model in mind, which works much better.
+           Moved non-essential post-increments to pre-increments.
+           Fixed bug caused by this decision in Host::gotCluster().
+
+12/21/01 - Christmas vacation! Decruftified class String. Created changelog.txt.
+           Improved default responses for !attach !where !team !zone.
+           Verified !say is clean of security holes. Improved !listalias.
+           Added !turret command to turn auto-turrets into manned gun platforms.
+
+12/20/01 - Added [Security] section in MERVBot.INI.  Reorganized other keys.
+           Critical buffers are now zero'd before deallocation.
+           Removed static keyword from some variables to restore stability.
+           Improved auto-turret accuracy by fixing the triangulation.
+
+12/19/01 - Let the Bug Hunt begin!
+           !help ALL command displays all lines of operator command info.
+           Fixed mass disconnection bug.  !closeall works perfectly now.
+           Sends KeepAlives during periods of inactivity. Fixed !attach %selfname.
+
+12/18/01 - Removed extraneous information from the terminal window.
+
+12/15/01 - Fixed a file transfer bug.
+           No longer tries to download news.txt files that don't exist.
+
+12/09/01 - MERVBot "goowie" terminal windows have scrolling text.
+
+12/08/01 - Snrrrub-Catid Algorithm for Tiled Surfaces (Scat $$) for SnrrrubSpace.
+
+11/26/01 - (Slightly) important feature of synchronizing clocks with server. Oops.
+           Corrected the chat message filter to fix an obscure bug.
+           These changes correct all known issues with ignoring chat messages.
+           Updated !lag command to display combination of *tinfo and *lag output.
+           Added new INI variable "RemoteOperator."  Removed some extra commands.
+
+11/25/01 - "ThreadSafe" base window class working swell.
+           *relkill 1 request now sent during first login:)
+
+11/24/01 - Streamlined networking further via static members and FULL clustering!
+           Optimized reliable messaging by fixing ping table (read: nuking it).
+
+11/23/01 - Added preliminary Ctm protocol.  Fixed minor regform bug.
+           Added compiler options to include the "costly ident resolution speedup."
+
+11/22/01 - Addressed a memory leak.  Doubled network throughput.
+
+11/21/01 - Thanksgiving!  Dumped TUI, started work on MDI GUI.
+
+11/17/01 - Fixed all known bugs.  Console window has a TUI.  Started DEFAULT.
+
+10/16/01 - Finished the DLL loader.  Updated Spawns.txt to reflect changes.
+
+10/13/01 - Shaved extraneous commands from the core.  These will be in DEFAULT.
+
+10/7/01 - School has finally picked up, i'll have much less time to spend.
+
+10/3/01 - Gave the SMods !limit command to facilitate dealing with abusive mods.
+
+10/2/01 - Recoded _linkedlist with copy constructor, cyclic, unlist() and find().
+          Streamlined coordinate scanning further using these new devices.
+
+10/1/01 - Now compatible with highly-populated zones assigning huge idents.
+          Fixed coordinate scanning to make infinite loops impossible.
+          Improved linear projectile motion to account for micro-pixel spillover.
+
+9/30/01 - Added new commands for frequency ownership, !autoreset & !autoenergy.
+          !help reference rewritten for readability.
+
+9/29/01 - Added new operator class "Limited" so Players can claim bot ownership.
+          !attach on is now the same as !attach %selfname.
+
+9/27/01 - Decreased socket read time with a global buffer.
+          Patched a stupid error in the !eventeams command.
+
+9/24/01 - Fixed an issue with MaskBan:1 that caused it to be kicked from SSC.
+
+9/23/01 - Derived a handy formula for an (even worse) AI turret.
+
+9/20/01 - Implemented Commands.txt and Operators.txt database saving features.
+          Wrote short batch file 'restore.bat' to reset these files from *.bak.
+
+9/19/01 - Added limiter to prevent message flooding when the bot isn't a sysop.
+
+9/18/01 - Implemented !spawn & !close commands.  Top class score on first essay.
+
+9/17/01 - Added linear prediction algorithm for more accurate position updates.
+
+9/16/01 - Implemented Spawns.txt.  Fixed several in-game bugs, like KoTH wins.
+          Security checksum response delayed for map downloads.
+
+9/15/01 - Optimized Chatter.log system.  Recoded string manipulation for speed.
+          Fixed a bug in the encryption system, recoded encryption for speed.
+
+9/14/01 - Enabled many compiler optimizations, fixed some redundant code, etc.
+          Completed Chatter.log system.  !go @+# is now simply !go # for main.
+
+9/13/01 - Fixed a problem with byte alignment in the arenaSettings structure.
+          Routed all events through the bot's Host structure code.
+
+9/11/01 - Added Ctm settings to arenaSettings.  The day the 'market stood still.
+
+9/09/01 - Completed support for chatter.log.  Remote private commands work.
+
+9/08/01 - Operators.txt & Commands.txt completely implemented to satisfaction.
+
+9/05/01 - School started for me.
+
+9/04/01 - INI settings reader completed.
+
+9/01/01 - Protocol updates, cycle through players as spectator.
+          New Mod commands, bug fixes, TXT/INI formats.
+
+8/25/01 - SMod/Mod commands completed; some others done too.
+
+8/17/01 - Bug hunt continues.
+
+8/15/01 - DBotServ plan emerges.  First bug hunt begins.
+
+8/13/01 - First bot connected to a test server.

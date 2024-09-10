@@ -1,0 +1,29 @@
+You are using build 46 of MERVBot.
+
+
+New MERVBot builds come out all the time!
+
+http://mervbot.com
+http://catid.ssihosting.com
+
+Visit my website for all the latest builds.
+
+
+How to upgrade the MERVBot core:
+
+Download MERVBot.zip from my website.
+Close the copies of MERVBot you wish to upgrade.
+Extract MERVBot.EXE into each of your MERVBot folders.
+Extract zlib.dll into each of your MERVBot folders.    [NEW!!]
+You can delete the SUBSPACE.BIN file.  [NEW!!]
+Done!  No need to redo everything.
+
+
+Rule about downloading plugins:
+
+Whenever you download a new plugin, make sure you have the latest version of the MERVBot core.
+The plugins give little indication that they are out of date.
+If you don't see any Ext: commands, upgrade your bot.
+
+If a new version of a plugin you are using is available, you should download it.
+New versions normally contain security patches and create a more reliable bot.

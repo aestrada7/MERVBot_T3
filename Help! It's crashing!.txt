@@ -1,0 +1,24 @@
+Try to recreate the crash.  Find out what's triggering it if you can.
+
+You should use DrWatson to give me information about the crash.
+
+Instructions for DrWatson:
+
+1. Start:Run
+2. Type "drwtsn32 -i", press enter
+3. Start:Run
+4. Type "drwtsn32", press enter
+5. Set where the logs and dumps are stored on your harddrive.
+
+Use MERVBot_debug.exe for best results, though some crashes will only
+happen with regular MERVBot.exe
+
+Now when it crashes, DrWatson will pop up and write some info
+to the logs you specified.  You may now send these logs and dumps
+to me which will greatly improve my chances of fixing the glitch.
+
+Contact me:
+
+mailto:cat02e@fsu.edu
+ICQ#18736684
+IRC:irc.freenode.net #sheepcloning #C++

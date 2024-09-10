@@ -1,0 +1,56 @@
+Realism Zone is BACK!!!
+
+8:11 AM 5/12/2002 - TNet as well as Realism Zone now has a host.  Its on a Oc-12 connection.  Its hosted in the UK.  Its a great server.  I hope it can be enjoyed.
+
+6:54 PM 5/8/2002 - If you would like to become a staff member please contact me at gearman@telocity.com or ICQ # 102600
+
+I would like some feed back on well... anything.
+
+Right now this zone is just hosted on my aDSL connection however if there is interest in the zone I will find a host for the needs of the players.
+
+Feel free to jump on IRC.  irc.x3ms.net port 7000 or irc.dal.net port 6667 on channel #SubSpace
+
+- The Ghost Ship
+
+- Staff -
+
+SysOp - The Ghost Ship
+
+Super Moderator(s) - *none yet*
+
+Moderator(s) - *none yet*
+
+-------------- GamePlay and Storyline --------------
+
+At the height of the great war of 2285 pilots and ship makers were becoming furious and unsettled as new unthinkable technologies were being put to use.  Before the war such technologies were banned from fighters and general combat situations as they were deemed not fit for general declaration of war.  However once the war settled down with no final victor political strain forced many Naval deep space fighter pilots into hiding and several renegade Admirals and command staff of high rank turned up missing.  The Chairman of Space Flight and Combat issued a warrent for all missing senior staff to be suspended.  They caught several rogue Rear Admirals and Commodores however they were small forces compared to what was being cooked up by defects.  However the captured officiers were quickly stripped of rank and tried.  Little did the Naval government body realize that many of their own ship building companies and factories failed to report stolen blueprints, plans and other technological enhancements built for the naval fleet.  It is now 2287 and naval battle is tense.  Many companies like the pilots they serve have gone rogue.  The Naval government body has calapsed under political pressure and the war has no apparent sides.
+
+I will describe the "energy" concept in detail for better play.  Each ship is given a starting "energy" and it can be upgraded through money (points) or picking up cargo "greens" .  The energy powers every part of a ship.  Most notably the weapons array.  Each weapon uses a small amount of reactor energy to fire.  Torpedos (bombs) and Missles (L1 Fast-Bomb) use more energy.  The energy is also tied directly into your regenerative plasma armor.  A ship is very frail and can be destroyed easily if it weren't for this armor.  If you are hit your plasma armor will require energy to compensate the damage and repair it.  It is almost like a shielding except it applies directly to your ships hull.  If you have no energy your reactor cannot power the plamsa armor and you are extremely vulnerable.  Therefore it is always wise to have at least 500 energy in reserve.  If you are extremely low on energy the best suggestion is to stop shooting and retreat otherwise you can likely take a hit that will go right through your plasma armor thus destroying your ship and that is a bad thing.
+
+Lets get to the basics of Naval Space Flight.  We will start you off with a basic Oconner Domanic HA-46 Fighter nicknamed the "Warbird" It is a light fighter.  Its equiped with an ion charged cannon.  And concussion missles.  It is one of the most agile fighters out there however its got a fairly low grade energy reactor therefore its plasma armor plating does not last long in a dogfight.  Its advantage however is its extremely well handling and concussion missle output.  Unlike regular torpedos concussion missles take very little reactor energy to create and fire and their speed make them leathal.  Use them well.  One of the things that makes this zone unique is the ability to use money (points).  You get money based on a persons bounty plus how much bounty you have.  Your bounty is multiplied into credits (currency/points).  I will not say "how" multiplied ;)
+
+Ok now you've heard about the Warbird I will briefly describe the rest of the ships in moderate detail.
+
+Crummand FC-12/O "Javelin"
+This is an extremely fast intercepter/fighter its mainly built for defensive attack and interception.  It is a extremely good ship for rogue pilots given its speed it can get in and out of situations with ease.  The ship has one Ion charged cannon and one standard torpedo bay.  The ship will not have greater speed until you use the afterburners (hold shift).  When you do you will increase in speed by 50% however reactor energy will be greatly consumed so if you're taking lots of damage this would not be suggested.  This ship carries a Warp Field Inhibitor named "AntiWarp" by most pilots.  This device prevents a ship from warping to safety.
+
+Loakhaed RSC17 "Spider"
+This ship has been in top secret development for political escort missions and strike attacks.  It uses experimental stealth technologies.  It is also equiped with a Cloaking device that rendors the ship invisible to the naked eye.  However firing destablizes the cloak field thus deactivating your cloaking device.  Be aware that the cloaking device uses roughly 85% of your reactor energy.  Used in conjunction with your stealth your reactor usage is 95% so you have to be very careful.  The spider is armed with a high yield rapid fire energy cannon.  It is highly useful for taking out a ship quickly before it has time to react.  Most details of this ship have been deemed "rumor" by most naval officiers
+
+Ivangrad Ut-59 "Leviathan"
+This is a heavy assult bomber it is powered by a newly designed for planetary assults and bombing.  It can be used to launch a large number of bombs torwards a target or group of targets dealing great damage.  It is armed with the basic Ion charged cannon and experimental photon torpedos. (No not like in star trek).  This ship is best used when escorted by fighters.  Rogue play NOT recommended.
+
+Blight Aerospace Nu-34 "Terrier"
+The Terrier is a standard assult fighter plans for this fighter were stolen by merchants for fighter escort of expensive cargo.  This is the best ship for beginner pilots.  Its most well known feature is that it starts fully loaded and due to the fact that it automaticly holds a 1000 green rate its pilot gains a lot of money per kill.  It is armed with dual ion charged cannons and standard torpedo's its dual cannons make it a deadly fighter.  Best used for gaining credits or assisting in fighter/escort combat.
+
+Yamakazi Sholi ZnK/O-1 "Weasel"
+The Weasel is an experimental recon and assult fighter it carries Electro Magnetic Pulse (EMP) torpedos which on impact can disable a persons reactor core stopping their energy output flow thereby giving the weasel pilot time to destroy the vessel while the reactor cannot power the target's plasma armor.  It is also armed with a standard ion charged cannon.  This ship was canceled due to a ban on the ships weapon however a rogue Admiral Zira stole the plans and had it developed for his own personal fighter fleet.
+
+Avro 4F/2 HMS "Lancaster"
+Another experimental ship classified as a bomber noone really knows much about this vessel however word of its weapon got out and a ban was soon placed on the use of it.  It appears as a regular assult bomber yet its classification as "bomber" doesn't do it justice.  It carries a standard ion charged cannon and an atomic nuclear payload of gravimetric torpedos.  These "nukes" are capable of destroying a small moons entire population.  However it has been refited for taking out fighters and bombers. The bombs core explosion itself is not all that dangerous... it is the gravimetric shockwave (shrapnel) it produces that does the most damage.  A direct hit can destroy almost any vessel instantly.  Its shockwave will tear the ship apart from ground-zero whereas the plasma armor is utterly useless.  It is best used when escorted by a fighter or two while it drops a payload and the fighters cover it while it repowers its weapons.
+
+Lezarwerks SY/9 "Shark"
+This ship is an experimental flight testing ship fitted only with a standard ion cannon for defensive purposes its main feature is its gravity drive which allows this ship to travel extremely fast.  The ship is intended for advanced scouting purposes.  The gravity drive powers a standard warp engine unit allowing the ship to warp at a very high rate.  Due to the gravity drive the ship itself cannot power normal plasma armor.  The ship is now used by merchants to get in and out of situations extremely fast.  The ship itself however is EXTREMELY expensive due to its remarkable abilities.  The ship is best used to just scout around and jump out whenever there is trouble.  Be aware though that confronting a Javelin fighter can leave the Shark pilot in a very sticky situation as the Javelin carries an AntiWarp device.
+
+-------------- Rank and Status --------------
+
+I am currently trying to design a "ranking" system that could be based for players I am still deciding how to do it.  However I *think* I'll just use the news text to display all dedicated players and their ranks.  I will try to be fair with ranks and all.  I will most likely do it based on how long a player has been with the zone and on how many defined players there are.
