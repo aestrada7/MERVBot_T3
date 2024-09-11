@@ -97,7 +97,7 @@ public:
 		boxes[0].player_1_score = 0;
 		boxes[0].player_2_score = 0;
 		boxes[0].limit = 10;
-		boxes[0].timer = 0;
+		boxes[0].timer = -1;
 		boxes[0].locked = false;
 		boxes[1].x = 180;
 		boxes[1].y = 1;
@@ -110,7 +110,7 @@ public:
 		boxes[1].player_1_score = 0;
 		boxes[1].player_2_score = 0;
 		boxes[1].limit = 10;
-		boxes[1].timer = 0;
+		boxes[1].timer = -1;
 		boxes[1].locked = false;
 		boxes[2].x = 180;
 		boxes[2].y = 480;
@@ -123,7 +123,7 @@ public:
 		boxes[2].player_1_score = 0;
 		boxes[2].player_2_score = 0;
 		boxes[2].limit = 10;
-		boxes[2].timer = 0;
+		boxes[2].timer = -1;
 		boxes[2].locked = false;
 	}
 
@@ -173,9 +173,12 @@ public:
 	int playerInBox(Player *p);
 
 	void assignToBox(Player *p, int selectedBox);
+	void duel(Player *p);
 	void aboutBot(Player *p);
 	void listDuels();
 	void setLimit(Player *p, int newLimit);
+	void cleanBoxes();
+	void resign(Player *p);
 
 	void playerKilled(Player *p, Player *k);
 	void shipChanged(Player *p, int oldship, int oldteam);
@@ -183,6 +186,8 @@ public:
 
 	void setTimer(int secs, int idx);
 	void timerExpired(int idx);
+
+	void debug();
 };
 
 

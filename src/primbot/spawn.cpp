@@ -56,17 +56,17 @@ void botInfo::gotEvent(BotEvent &event)
 //////// Periodic ////////
 	case EVENT_Tick:
 		{
-			for(int i = 0; i < sizeof(boxes); i++)
+			for(int i = 0; i < 3; i++)
 			{
-				if(boxes[i].timer >= 0)
-				{
-					boxes[i].timer--;
-				}
-
 				if(boxes[i].timer == 0)
 				{
 					printf("Box %i timer expired\n", i);
 					timerExpired(i);
+				}
+
+				if(boxes[i].timer >= 0)
+				{
+					boxes[i].timer--;
 				}
 			}
 		}
@@ -338,6 +338,37 @@ void botInfo::gotEvent(BotEvent &event)
 					if(strcmp(msg, "!duels") == 0)
 					{
 						Command c = Command("duels");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!duel") == 0)
+					{
+						Command c = Command("duel");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!resign") == 0)
+					{
+						Command c = Command("resign");
+						gotCommand(p, &c);
+					}
+
+					/* Todo: change to something that's not horrible like this */
+					if(strcmp(msg, "!box 1") == 0)
+					{
+						Command c = Command("box 1");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!box 2") == 0)
+					{
+						Command c = Command("box 2");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!box 3") == 0)
+					{
+						Command c = Command("box 3");
 						gotCommand(p, &c);
 					}
 				}
@@ -748,6 +779,7 @@ void botInfo::announceWinner(int idx)
 	boxes[idx].player_1_score = 0;
 	boxes[idx].player_2_score = 0;
 	boxes[idx].limit = 10;
+	boxes[idx].timer = -1;
 
 	std::stringstream sstmf;
 	sstmf << "*arena Box " << idx + 1 << " is now free!";
@@ -761,15 +793,18 @@ bool botInfo::enterBox(int idx, Player *p)
 	if(boxes[idx].player_1 == NULL)
 	{
 		boxes[idx].player_1 = p;
+		printf("assigned to slot 1\n");
 		return true;
 	}
 	else if(boxes[idx].player_2 == NULL)
 	{
 		boxes[idx].player_2 = p;
+		printf("assigned to slot 2\n");
 		return true;
 	}
 	else
 	{
+		printf("box full! \n");
 		return false;
 	}
 }
@@ -778,28 +813,32 @@ bool botInfo::leaveBox(int idx, Player *p)
 {
 	if(boxes[idx].player_1 == p)
 	{
+		printf("Left box %d on slot 1\n", idx);
 		boxes[idx].player_1 = NULL;
 		return true;
 	}
 	else if(boxes[idx].player_2 == p)
 	{
+		printf("Left box %d on slot 2\n", idx);
 		boxes[idx].player_2 = NULL;
 		return true;
 	}
 	else
 	{
+		printf("Not in box %d\n", idx);
 		return false;
 	}
 }
 
 int botInfo::playerInBox(Player *p)
 {
+	printf("looking for player %s\n", p->name);
 	for(int i = 0; i < sizeof(boxes); i++)
 	{
 		if(boxes[i].player_1 == p || boxes[i].player_2 == p)
 		{
-			break;
 			return i;
+			break;
 		}
 	}
 	return -1;
@@ -811,11 +850,39 @@ int botInfo::playerInBox(Player *p)
 void botInfo::assignToBox(Player *p, int selectedBox)
 {
 	printf("Attempting to assign player %s to box %d\n", p->name, selectedBox);
-	if(selectedBox > 0 && selectedBox <= sizeof(boxes))
+	if(selectedBox > 0 && selectedBox <= sizeof(boxes) && p->ship != SHIP_Spectator)
 	{
 		int idx = selectedBox - 1;
-		int boxAssigned = enterBox(idx, p);
+		int p_idx = playerInBox(p);
+		bool boxAssigned = false;
 		
+		if(p_idx != -1)
+		{
+			if(p_idx == idx)
+			{
+				printf("Player is already in box %d\n", selectedBox);
+				sendPrivate(p, "You are already in that box");
+			}
+			else
+			{
+				if(boxes[p_idx].locked)
+				{
+					sendPrivate(p, "You're already in a duel, use !resign to be able to change boxes.");
+				}
+				else
+				{
+					printf("Player in a box, but no duel started, changing. %d\n", p_idx);
+					bool leftBox = leaveBox(p_idx, p);
+					boxAssigned = enterBox(idx, p);
+				}
+			}
+		}
+		else
+		{
+			printf("Player not in a box, assigning to box %d\n", selectedBox);
+			boxAssigned = enterBox(idx, p);
+		}
+
 		if(!boxAssigned)
 		{
 			printf("Box is full!\n");
@@ -825,9 +892,12 @@ void botInfo::assignToBox(Player *p, int selectedBox)
 		{
 			printf("Assigned. Warping to box %d\n", selectedBox);
 			warpTo(p, boxes[idx].x, boxes[idx].y);
-			std::stringstream sstm;
-			sstm << "Box #" << selectedBox;
-			char *msg = &sstm.str()[0];
+
+			std::stringstream sstmb;
+			sstmb << "Box #" << selectedBox;
+			std::string strb = sstmb.str();
+			char *boxMsg = &strb[0];
+			sendPrivate(p, boxMsg);
 		}
 	}
 	else
@@ -836,10 +906,50 @@ void botInfo::assignToBox(Player *p, int selectedBox)
 	}
 }
 
+void botInfo::duel(Player *p)
+{
+	printf("Attempting to start a duel with %s\n", p->name);
+	int idx = playerInBox(p);
+
+	if(idx != -1)
+	{
+		if(boxes[idx].locked)
+		{
+			printf("Box %d is locked!\n", idx);
+			std::stringstream sstm;
+			sstm << "Duel already in progress for box " << idx + 1;
+			char *msg = &sstm.str()[0];
+			sendPrivate(p, msg);
+		}
+		else
+		{
+			if(boxes[idx].player_1 == NULL || boxes[idx].player_2 == NULL)
+			{
+				printf("Need two players to start a duel!\n");
+				sendPrivate(p, "Need two players to start a duel!");
+			}
+			else
+			{
+				boxes[idx].locked = true;
+				warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
+				warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
+				std::stringstream sstm;
+				sstm << "*arena Box " << idx + 1 << " is now being used for " << boxes[idx].player_1->name << " vs " << boxes[idx].player_2->name;
+				char *msg = &sstm.str()[0];
+				sendPublic(msg);
+			}
+		}
+	}
+	else
+	{
+		sendPrivate(p, "You're not in a box!");
+	}
+}
+
 void botInfo::aboutBot(Player *p)
 {
 	printf("Sending !about or !version info...\n");
-	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.2.1 (2024/09/10)");
+	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.1 (2024/09/10)");
 	sendPrivate(p, "[name: primbot.dll] [vanhelsing44@gmail.com]");
 }
 
@@ -899,6 +1009,42 @@ void botInfo::setLimit(Player *p, int newLimit)
 	}
 }
 
+void botInfo::cleanBoxes()
+{
+	printf("Cleaning boxes...\n");
+	for(int i = 0; i < sizeof(boxes); i++)
+	{
+		boxes[i].player_1 = NULL;
+		boxes[i].player_2 = NULL;
+		boxes[i].player_1_score = 0;
+		boxes[i].player_2_score = 0;
+		boxes[i].limit = 10;
+		boxes[i].timer = -1;
+		boxes[i].locked = false;
+	}
+	sendPublic("*arena Boxes reset.");
+}
+
+void botInfo::resign(Player *p)
+{
+	printf("Player %s forfeits. Resigning.\n", p->name);
+	int idx = playerInBox(p);
+
+	if(idx != -1)
+	{
+		bool boxLeft = leaveBox(idx, p);
+
+		if(boxLeft)
+		{
+			sendPrivate(p, "Successfully forfeited.");
+			announceWinner(idx);
+		}
+	}
+	else
+	{
+		sendPrivate(p, "Not in a box. Can't resign.");
+	}
+}
 
 ///// Primacy Events /////
 
@@ -1028,8 +1174,24 @@ void botInfo::timerExpired(int idx)
 {
 	if(idx != -1)
 	{
-		warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
-		warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
-		boxes[idx].timer = -1;
+		if(boxes[idx].player_1 == NULL && boxes[idx].player_2 == NULL)
+		{
+			warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
+			warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
+			boxes[idx].timer = -1;
+		}
+	}
+}
+
+void botInfo::debug()
+{
+	for(int i = 0; i < sizeof(boxes); i++)
+	{
+		printf("Box %i\n", i);
+		printf("Player 1: %s\n", boxes[i].player_1 ? boxes[i].player_1->name : "NULL");
+		printf("Player 2: %s\n", boxes[i].player_2 ? boxes[i].player_2->name : "NULL");
+		printf("Timer: %i\n", boxes[i].timer);
+		printf("Limit: %i\n", boxes[i].limit);
+		printf("Locked: %i\n", boxes[i].locked);
 	}
 }

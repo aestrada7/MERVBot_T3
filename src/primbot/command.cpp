@@ -103,6 +103,30 @@ void botInfo::gotHelp(Player *p, Command *c)
 				sendPrivate(p, "Sets a limit to the duel, Defaults to 10.");
 				sendPrivate(p, "Usage: !limit <new_limit>");
 			}
+
+			if (c->checkParam("box"))
+			{
+				sendPrivate(p, "Select a box");
+				sendPrivate(p, "Usage: !box <box number>");
+			}
+
+			if (c->checkParam("duels"))
+			{
+				sendPrivate(p, "Get a list of ongoing duels");
+				sendPrivate(p, "Usage: !duels");
+			}
+
+			if (c->checkParam("duel"))
+			{
+				sendPrivate(p, "Start a duel while already in a box");
+				sendPrivate(p, "Usage: !duel");
+			}
+
+			if (c->checkParam("resign"))
+			{
+				sendPrivate(p, "Forfeit the current match");
+				sendPrivate(p, "Usage: !resign");
+			}
 		}
 	}
 }
@@ -132,6 +156,15 @@ void botInfo::gotCommand(Player *p, Command *c)
 		}
 	case OP_Moderator:
 		{	// Moderator-level commands
+			if (c->check("clean"))
+			{
+				cleanBoxes();
+			}
+
+			if(c->check("debug"))
+			{
+				debug();
+			}
 		}
 	case OP_Limited:
 		{	// Limited-level commands
@@ -163,7 +196,7 @@ void botInfo::gotCommand(Player *p, Command *c)
 
 			if (c->check("duel"))
 			{
-				sendPublic("no duels");
+				duel(p);
 			}
 
 			if (c->check("limit"))
