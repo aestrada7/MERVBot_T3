@@ -57,7 +57,7 @@ void botInfo::gotEvent(BotEvent &event)
 //////// Periodic ////////
 	case EVENT_Tick:
 		{
-			for(int i = 0; i < 3; i++)
+			for(int i = 0; i < 4; i++)
 			{
 				if(boxes[i].timer == 0)
 				{
@@ -389,6 +389,12 @@ void botInfo::gotEvent(BotEvent &event)
 					if(strcmp(msg, "!box 3") == 0)
 					{
 						Command c = Command("box 3");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!box 4") == 0)
+					{
+						Command c = Command("box 4");
 						gotCommand(p, &c);
 					}
 				}
@@ -911,7 +917,7 @@ void botInfo::assignToBox(Player *p, int selectedBox)
 		if(!boxAssigned)
 		{
 			printf("Box is full!\n");
-			sendPrivate(p, "Box is full!");
+			sendPrivate(p, "Unable to assign to box. Try another box.");
 		}
 		else
 		{
@@ -1225,7 +1231,7 @@ void botInfo::timerExpired(int idx)
 
 void botInfo::debug()
 {
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 4; i++)
 	{
 		printf("Box %i\n", i);
 		printf("Player 1: %s\n", boxes[i].player_1 ? boxes[i].player_1->name : "NULL");

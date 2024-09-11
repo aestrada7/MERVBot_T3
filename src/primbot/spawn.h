@@ -65,7 +65,7 @@ class botInfo
 	int countdown[4];
 
 	// Put bot data here
-	BoxData boxes[3];
+	BoxData boxes[4];
 
 public:
 	botInfo(CALL_HANDLE given)
@@ -86,7 +86,7 @@ public:
 		object_dest = NULL;
 
 		// Put initial values here
-		boxes[0].x = 500;
+		boxes[0].x = 493;
 		boxes[0].y = 819;
 		boxes[0].p1_safe_x = 399;
 		boxes[0].p1_safe_y = 819;
@@ -99,12 +99,12 @@ public:
 		boxes[0].limit = 10;
 		boxes[0].timer = -1;
 		boxes[0].locked = false;
-		boxes[1].x = 180;
-		boxes[1].y = 1;
-		boxes[1].p1_safe_x = 92;
-		boxes[1].p1_safe_y = 1;
-		boxes[1].p2_safe_x = 279;
-		boxes[1].p2_safe_y = 1;
+		boxes[1].x = 736;
+		boxes[1].y = 819;
+		boxes[1].p1_safe_x = 592;
+		boxes[1].p1_safe_y = 819;
+		boxes[1].p2_safe_x = 852;
+		boxes[1].p2_safe_y = 819;
 		boxes[1].player_1 = NULL;
 		boxes[1].player_2 = NULL;
 		boxes[1].player_1_score = 0;
@@ -112,7 +112,7 @@ public:
 		boxes[1].limit = 10;
 		boxes[1].timer = -1;
 		boxes[1].locked = false;
-		boxes[2].x = 180;
+		boxes[2].x = 186;
 		boxes[2].y = 480;
 		boxes[2].p1_safe_x = 92;
 		boxes[2].p1_safe_y = 482;
@@ -125,6 +125,19 @@ public:
 		boxes[2].limit = 10;
 		boxes[2].timer = -1;
 		boxes[2].locked = false;
+		boxes[3].x = 186;
+		boxes[3].y = 349;
+		boxes[3].p1_safe_x = 92;
+		boxes[3].p1_safe_y = 349;
+		boxes[3].p2_safe_x = 279;
+		boxes[3].p2_safe_y = 349;
+		boxes[3].player_1 = NULL;
+		boxes[3].player_2 = NULL;
+		boxes[3].player_1_score = 0;
+		boxes[3].player_2_score = 0;
+		boxes[3].limit = 10;
+		boxes[3].timer = -1;
+		boxes[3].locked = false;
 	}
 
 	void clear_objects();
