@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <sstream>
+#include <windows.h>
 
 #define UNASSIGNED 0xffff
 
@@ -351,6 +352,25 @@ void botInfo::gotEvent(BotEvent &event)
 					{
 						Command c = Command("resign");
 						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!clean") == 0)
+					{
+						Command c = Command("clean");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!debug") == 0)
+					{
+						Command c = Command("debug");
+						gotCommand(p, &c);
+					}
+
+					if(strcmp(msg, "!help") == 0)
+					{
+						sendPrivate(p, "!box !duel !duels !limit !resign !about");
+						sendPrivate(p, "for detailed help, type ::!help <command> (e.g. ::!help box)");
+						sendPrivate(p, "most commands can be typed in the public chat, except for !limit");
 					}
 
 					/* Todo: change to something that's not horrible like this */
@@ -752,26 +772,30 @@ void botInfo::announceScore(int idx)
 
 void botInfo::announceWinner(int idx)
 {
+	printf("Attempting to finish the match and announce a winner...\n");
 	int p1_score = boxes[idx].player_1_score;
 	int p2_score = boxes[idx].player_2_score;
 
-	std::stringstream sstm;
+	std::stringstream sstmaw;
 	if (p1_score > p2_score)
 	{
-		sstm << "*arena " << boxes[idx].player_1->name << " wins! " << p1_score << "-" << p2_score;
+		sstmaw << "*arena " << boxes[idx].player_1->name << " wins! " << p1_score << "-" << p2_score;
 	}
 	else if (p2_score > p1_score)
 	{
-		sstm << "*arena " << boxes[idx].player_2->name << " wins! " << p2_score << "-" << p1_score;
+		sstmaw << "*arena " << boxes[idx].player_2->name << " wins! " << p2_score << "-" << p1_score;
 	}
 	else if (p1_score == p2_score)
 	{
-		sstm << "*arena Tie! " << p1_score << "-" << p2_score;
+		sstmaw << "*arena Tie! " << p1_score << "-" << p2_score;
 	}
-	std::string str = sstm.str();
-	char *msg = &str[0];
+	std::string straw = sstmaw.str();
+	char *msgaw = &straw[0];
 
-	sendPublic(msg);
+	//TODO: The announcement of the winner should come after the last kill private message is sent,
+	//Sleep is an idea but delays everything.
+	Sleep(1000);
+	sendPublic(msgaw);
 
 	boxes[idx].locked = false;
 	boxes[idx].player_1 = NULL;
@@ -783,9 +807,10 @@ void botInfo::announceWinner(int idx)
 
 	std::stringstream sstmf;
 	sstmf << "*arena Box " << idx + 1 << " is now free!";
-	char *msgf = &sstmf.str()[0];
+	std::string strf = sstmf.str();
+	char *msgf = &strf[0];
 
-	sendPublic(msg);
+	sendPublic(msgf);
 }
 
 bool botInfo::enterBox(int idx, Player *p)
@@ -793,18 +818,18 @@ bool botInfo::enterBox(int idx, Player *p)
 	if(boxes[idx].player_1 == NULL)
 	{
 		boxes[idx].player_1 = p;
-		printf("assigned to slot 1\n");
+		printf("Assigned to slot 1\n");
 		return true;
 	}
 	else if(boxes[idx].player_2 == NULL)
 	{
 		boxes[idx].player_2 = p;
-		printf("assigned to slot 2\n");
+		printf("Assigned to slot 2\n");
 		return true;
 	}
 	else
 	{
-		printf("box full! \n");
+		printf("Box full! \n");
 		return false;
 	}
 }
@@ -813,19 +838,19 @@ bool botInfo::leaveBox(int idx, Player *p)
 {
 	if(boxes[idx].player_1 == p)
 	{
-		printf("Left box %d on slot 1\n", idx);
+		printf("Left box %d on slot 1\n", (idx + 1));
 		boxes[idx].player_1 = NULL;
 		return true;
 	}
 	else if(boxes[idx].player_2 == p)
 	{
-		printf("Left box %d on slot 2\n", idx);
+		printf("Left box %d on slot 2\n", (idx + 1));
 		boxes[idx].player_2 = NULL;
 		return true;
 	}
 	else
 	{
-		printf("Not in box %d\n", idx);
+		printf("Not in box %d\n", (idx + 1));
 		return false;
 	}
 }
@@ -902,7 +927,7 @@ void botInfo::assignToBox(Player *p, int selectedBox)
 	}
 	else
 	{
-		sendPrivate(p, "Invalid box number");
+		sendPrivate(p, "Invalid box/ship.");
 	}
 }
 
@@ -916,10 +941,11 @@ void botInfo::duel(Player *p)
 		if(boxes[idx].locked)
 		{
 			printf("Box %d is locked!\n", idx);
-			std::stringstream sstm;
-			sstm << "Duel already in progress for box " << idx + 1;
-			char *msg = &sstm.str()[0];
-			sendPrivate(p, msg);
+			std::stringstream sstmd;
+			sstmd << "Duel already in progress for box " << idx + 1;
+			std::string strd = sstmd.str();
+			char *msgd = &strd[0];
+			sendPrivate(p, msgd);
 		}
 		else
 		{
@@ -933,10 +959,11 @@ void botInfo::duel(Player *p)
 				boxes[idx].locked = true;
 				warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
 				warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
-				std::stringstream sstm;
-				sstm << "*arena Box " << idx + 1 << " is now being used for " << boxes[idx].player_1->name << " vs " << boxes[idx].player_2->name;
-				char *msg = &sstm.str()[0];
-				sendPublic(msg);
+				std::stringstream sstmdd;
+				sstmdd << "*arena Box " << idx + 1 << " is now being used for " << boxes[idx].player_1->name << " vs " << boxes[idx].player_2->name;
+				std::string strdd = sstmdd.str();
+				char *msgdd = &strdd[0];
+				sendPublic(msgdd);
 			}
 		}
 	}
@@ -949,7 +976,7 @@ void botInfo::duel(Player *p)
 void botInfo::aboutBot(Player *p)
 {
 	printf("Sending !about or !version info...\n");
-	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.1 (2024/09/10)");
+	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.2 (2024/09/11)");
 	sendPrivate(p, "[name: primbot.dll] [vanhelsing44@gmail.com]");
 }
 
@@ -963,10 +990,11 @@ void botInfo::listDuels()
 		if(boxes[i].locked == true)
 		{
 			output = true;
-			std::stringstream sstm;
-			sstm << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name;
-			char *msg = &sstm.str()[0];
-			sendPublic(msg);
+			std::stringstream sstma;
+			sstma << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name;
+			std::string stra = sstma.str();
+			char *msga = &stra[0];
+			sendPublic(msga);
 		}
 	}
 
@@ -987,19 +1015,22 @@ void botInfo::setLimit(Player *p, int newLimit)
 		if(newLimit > boxes[idx].player_1_score && newLimit > boxes[idx].player_2_score)
 		{
 			boxes[idx].limit = newLimit;
-			std::stringstream sstm;
-			sstm << "Limit set to " << newLimit;
-			char *msg = &sstm.str()[0];
+			std::stringstream sstml;
+			sstml << "Limit set to " << newLimit;
+			std::string strml = sstml.str();
+			char *msgl = &strml[0];
 
 			if(boxes[idx].player_1 != NULL)
 			{
-				sendPrivate(boxes[idx].player_1, msg);
+				sendPrivate(boxes[idx].player_1, msgl);
 			}
 			if(boxes[idx].player_2 != NULL)
 			{
-				sendPrivate(boxes[idx].player_2, msg);
+				sendPrivate(boxes[idx].player_2, msgl);
 			}
-		} else {
+		}
+		else
+		{
 			sendPrivate(p, "New limit must be greater than current score");
 		}
 	}
@@ -1032,9 +1063,19 @@ void botInfo::resign(Player *p)
 
 	if(idx != -1)
 	{
-		bool boxLeft = leaveBox(idx, p);
+		bool scoreReset = false;
+		if(boxes[idx].player_1 == p)
+		{
+			boxes[idx].player_1_score = 0;
+			scoreReset = true;
+		}
+		if(boxes[idx].player_2 == p)
+		{
+			boxes[idx].player_2_score = 0;
+			scoreReset = true;
+		}
 
-		if(boxLeft)
+		if(scoreReset)
 		{
 			sendPrivate(p, "Successfully forfeited.");
 			announceWinner(idx);
@@ -1058,14 +1099,16 @@ void botInfo::playerKilled(Player *p, Player *k)
 	{
 		std::stringstream sstmk;
 		sstmk << "You had " << k->energy << " energy when you killed " << p->name;
-		char *msgk = &sstmk.str()[0];
+		std::string strk = sstmk.str();
+		char *msgk = &strk[0];
 
 		std::stringstream sstmp;
 		sstmp << k->name << " had " << k->energy << " energy when you died";
-		char *msgp = &sstmp.str()[0];
+		std::string strp = sstmp.str();
+		char *msgp = &strp[0];
 
-		sendPrivate(k, msgp);
-		sendPrivate(p, msgk);
+		sendPrivate(p, msgp);
+		sendPrivate(k, msgk);
 
 		if(boxes[idx].player_1 == k)
 		{
@@ -1088,7 +1131,7 @@ void botInfo::playerKilled(Player *p, Player *k)
 
 void botInfo::shipChanged(Player *p, int oldship, int oldteam)
 {
-	printf("spec or change ships\n");
+	printf("Spec or change ships triggered from %s\n", p->name);
 	int idx = playerInBox(p);
 
 	if(idx != -1)
@@ -1097,39 +1140,36 @@ void botInfo::shipChanged(Player *p, int oldship, int oldteam)
 		{
 			if(oldship != p->ship)
 			{
-				printf("%s Changed ships to %d\n", p->name, getShipName(p->ship));
+				printf("%s Changed ships to %s (%d)\n", p->name, getShipName(p->ship), p->ship);
 
-				if(oldship != p->ship)
+				if(p->ship != SHIP_Spectator)
 				{
-					if(p->ship != SHIP_Spectator)
-					{
-						std::stringstream sstm;
-						sstm << "*arena" << p->name << " changed ship to " << getShipName(p->ship);
-						char *msg = &sstm.str()[0];
+					std::stringstream sstms;
+					sstms << "*arena " << p->name << " changed ship to " << getShipName(p->ship);
+					std::string strs = sstms.str();
+					char *msgs = &strs[0];
 
-						sendPublic(msg);
-						setTimer(2, idx);
-					}
-					else
-					{
-						std::stringstream sstm;
-						sstm << "*arena" << p->name << " changed to spectator, finishing match.";
-						char *msg = &sstm.str()[0];
+					sendPublic(msgs);
+					setTimer(2, idx);
+				}
+				else
+				{
+					std::stringstream sstmsc;
+					sstmsc << "*arena " << p->name << " changed to spectator, finishing match.";
+					std::string strsc = sstmsc.str();
+					char *msgsc = &strsc[0];
 
-						bool boxLeft = leaveBox(idx, p);
-						sendPublic(msg);
-						announceWinner(idx);
-					}
+					sendPublic(msgsc);
+					announceWinner(idx);
 				}
 			}
 
-			if(oldteam != p->team)
+			if(oldteam != p->team && p->team != 9999)
 			{
-				printf("Changed freq");
+				printf("Changed freq\n");
 				
 				if(boxes[idx].player_1->team == boxes[idx].player_2->team)
 				{
-					bool boxLeft = leaveBox(idx, p);
 					sendPrivate(boxes[idx].player_1, "Both players are on the same freq. Ending.");
 					sendPrivate(boxes[idx].player_2, "Both players are on the same freq. Ending.");
 					announceWinner(idx);
@@ -1151,17 +1191,13 @@ void botInfo::playerLeftArena(Player *p)
 	
 	if(idx != -1)
 	{
-		bool boxLeft = leaveBox(idx, p);
+		std::stringstream sstmla;
+		sstmla << "*arena " << p->name << " left the arena";
+		std::string strla = sstmla.str();
+		char *msgla = &strla[0];
 
-		if(boxLeft)
-		{
-			std::stringstream sstm;
-			sstm << "*arena"<< p->name << " left the arena";
-			char *msg = &sstm.str()[0];
-
-			sendPublic(msg);
-			announceWinner(idx);
-		}
+		sendPublic(msgla);
+		announceWinner(idx);
 	}
 }
 
@@ -1172,20 +1208,24 @@ void botInfo::setTimer(int secs, int idx)
 
 void botInfo::timerExpired(int idx)
 {
+	printf("Timer expired function called on box %i\n", idx);
 	if(idx != -1)
 	{
-		if(boxes[idx].player_1 == NULL && boxes[idx].player_2 == NULL)
+		if(boxes[idx].player_1 != NULL && boxes[idx].player_2 != NULL)
 		{
+			printf("Warping players to safe locations...\n");
 			warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
 			warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
+			printf("Players warped.\n");
 			boxes[idx].timer = -1;
+			printf("Timer reset\n");
 		}
 	}
 }
 
 void botInfo::debug()
 {
-	for(int i = 0; i < sizeof(boxes); i++)
+	for(int i = 0; i < 3; i++)
 	{
 		printf("Box %i\n", i);
 		printf("Player 1: %s\n", boxes[i].player_1 ? boxes[i].player_1->name : "NULL");

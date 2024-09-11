@@ -39,10 +39,13 @@ void botInfo::gotHelp(Player *p, Command *c)
 			break;
 		case OP_Limited:
 			{	// Limited-level commands
+				sendPrivate(p, "!clean !debug");
 			}
 		case OP_Player:
 			{	// Player-level commands
-				sendPrivate(p, "!about (query me about my function)");
+				sendPrivate(p, "!box !duel !duels !limit !resign !about");
+				sendPrivate(p, "for detailed help, type ::!help <command> (e.g. ::!help box)");
+				sendPrivate(p, "most commands can be typed in the public chat, except for !limit");
 			}
 		}
 
@@ -95,12 +98,12 @@ void botInfo::gotHelp(Player *p, Command *c)
 		{	// Player-level commands
 			if (c->checkParam("about"))
 			{
-				sendPrivate(p, "!about (query me about my function)");
+				sendPrivate(p, "Displays information about the bot.");
 			}
 
 			if (c->checkParam("limit"))
 			{
-				sendPrivate(p, "Sets a limit to the duel, Defaults to 10.");
+				sendPrivate(p, "Sets a limit to the duel, Defaults to 10. Needs to be sent as a private message to the bot.");
 				sendPrivate(p, "Usage: !limit <new_limit>");
 			}
 
@@ -156,6 +159,9 @@ void botInfo::gotCommand(Player *p, Command *c)
 		}
 	case OP_Moderator:
 		{	// Moderator-level commands
+		}
+	case OP_Limited:
+		{	// Limited-level commands
 			if (c->check("clean"))
 			{
 				cleanBoxes();
@@ -165,9 +171,6 @@ void botInfo::gotCommand(Player *p, Command *c)
 			{
 				debug();
 			}
-		}
-	case OP_Limited:
-		{	// Limited-level commands
 		}
 	case OP_Player:
 		{	// Player-level commands
