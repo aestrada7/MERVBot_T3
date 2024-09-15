@@ -43,9 +43,9 @@ void botInfo::gotHelp(Player *p, Command *c)
 			}
 		case OP_Player:
 			{	// Player-level commands
-				sendPrivate(p, "!box !duel !duels !limit !resign !about");
+				sendPrivate(p, "!box !duel !duels !max !resign !about");
 				sendPrivate(p, "for detailed help, type ::!help <command> (e.g. ::!help box)");
-				sendPrivate(p, "most commands can be typed in the public chat, except for !limit");
+				sendPrivate(p, "most commands can be typed in the public chat, except for !max");
 			}
 		}
 
@@ -101,10 +101,10 @@ void botInfo::gotHelp(Player *p, Command *c)
 				sendPrivate(p, "Displays information about the bot.");
 			}
 
-			if (c->checkParam("limit"))
+			if (c->checkParam("max"))
 			{
 				sendPrivate(p, "Sets a limit to the duel, Defaults to 10. Needs to be sent as a private message to the bot.");
-				sendPrivate(p, "Usage: !limit <new_limit>");
+				sendPrivate(p, "Usage: !max <new_limit>");
 			}
 
 			if (c->checkParam("box"))
@@ -202,7 +202,7 @@ void botInfo::gotCommand(Player *p, Command *c)
 				duel(p);
 			}
 
-			if (c->check("limit"))
+			if (c->check("max"))
 			{
 				if (isNumeric(c->final))
 				{
@@ -211,7 +211,7 @@ void botInfo::gotCommand(Player *p, Command *c)
 				}
 				else
 				{
-					sendPrivate(p, "Usage: !limit <new_limit>");
+					sendPrivate(p, "Usage: !max <new_limit>");
 				}
 			}
 		}

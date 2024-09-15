@@ -368,9 +368,9 @@ void botInfo::gotEvent(BotEvent &event)
 
 					if(strcmp(msg, "!help") == 0)
 					{
-						sendPrivate(p, "!box !duel !duels !limit !resign !about");
+						sendPrivate(p, "!box !duel !duels !max !resign !about");
 						sendPrivate(p, "for detailed help, type ::!help <command> (e.g. ::!help box)");
-						sendPrivate(p, "most commands can be typed in the public chat, except for !limit");
+						sendPrivate(p, "most commands can be typed in the public chat, except for !max");
 					}
 
 					/* Todo: change to something that's not horrible like this */
@@ -982,7 +982,7 @@ void botInfo::duel(Player *p)
 void botInfo::aboutBot(Player *p)
 {
 	printf("Sending !about or !version info...\n");
-	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.2 (2024/09/11)");
+	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.4 (2024/09/14)");
 	sendPrivate(p, "[name: primbot.dll] [vanhelsing44@gmail.com]");
 }
 
@@ -997,7 +997,7 @@ void botInfo::listDuels()
 		{
 			output = true;
 			std::stringstream sstma;
-			sstma << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name;
+			sstma << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name << " (" << boxes[i].player_1_score << " - " << boxes[i].player_2_score << ")";
 			std::string stra = sstma.str();
 			char *msga = &stra[0];
 			sendPublic(msga);
@@ -1186,6 +1186,19 @@ void botInfo::shipChanged(Player *p, int oldship, int oldteam)
 					sendPrivate(boxes[idx].player_2, "Somebody changed freq, resetting.");
 					setTimer(2, idx);
 				}
+			}
+		}
+		else
+		{
+			if(p->ship == SHIP_Spectator)
+			{
+				printf("%s specced while assigned to a box but not already in a match", p->name);
+				bool boxLeft = leaveBox(idx, p);
+			}
+			else
+			{
+				printf("%s changed ships to %s (%d) while not in a match", p->name, getShipName(p->ship), p->ship);
+				warpTo(p, boxes[idx].x, boxes[idx].y);
 			}
 		}
 	}
