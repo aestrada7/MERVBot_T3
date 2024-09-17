@@ -179,6 +179,7 @@ public:
 
 	char *getShipName(int ship);
 	void warpTo(Player *p, int x, int y);
+	void givePrizes(Player *p);
 	void announceScore(int idx);
 	void announceWinner(int idx);
 	bool enterBox(int idx, Player *p);

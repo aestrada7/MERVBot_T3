@@ -78,6 +78,7 @@ void botInfo::gotEvent(BotEvent &event)
 			arena = (char*)event.p[0];
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
+			sendPublic("?grplogin sysop <PWD>"); // this should come from an .ini file, but for now we'll do it here
 		}
 		break;
 	case EVENT_ArenaSettings:
@@ -751,6 +752,25 @@ void botInfo::warpTo(Player *p, int x, int y)
 	sendPrivate(p, warpToMsg);
 }
 
+void botInfo::givePrizes(Player *p)
+{
+	sendPrivate(p, "*prize #13"); //full charge
+	sendPrivate(p, "*prize #-21"); //remove repel
+	sendPrivate(p, "*prize #-21"); //remove repel
+	sendPrivate(p, "*prize #-22"); //remove burst
+	sendPrivate(p, "*prize #-22"); //remove burst
+	sendPrivate(p, "*prize #-23"); //remove decoy
+	sendPrivate(p, "*prize #-23"); //remove decoy
+	sendPrivate(p, "*prize #-24"); //remove thor
+	sendPrivate(p, "*prize #-24"); //remove thor
+	sendPrivate(p, "*prize #-24"); //remove thor
+	sendPrivate(p, "*prize #-26"); //remove brick
+	sendPrivate(p, "*prize #-26"); //remove brick
+	sendPrivate(p, "*prize #-27"); //remove rocket
+	sendPrivate(p, "*prize #-28"); //remove portal
+	sendPrivate(p, "*prize #-28"); //remove portal
+}
+
 void botInfo::announceScore(int idx)
 {
 	int p1_score = boxes[idx].player_1_score;
@@ -965,6 +985,8 @@ void botInfo::duel(Player *p)
 				boxes[idx].locked = true;
 				warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
 				warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
+				givePrizes(boxes[idx].player_1);
+				givePrizes(boxes[idx].player_2);
 				std::stringstream sstmdd;
 				sstmdd << "*arena Box " << idx + 1 << " is now being used for " << boxes[idx].player_1->name << " vs " << boxes[idx].player_2->name;
 				std::string strdd = sstmdd.str();
@@ -982,7 +1004,7 @@ void botInfo::duel(Player *p)
 void botInfo::aboutBot(Player *p)
 {
 	printf("Sending !about or !version info...\n");
-	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.4 (2024/09/14)");
+	sendPrivate(p, "Primacy Bot by VanHelsing. Version: 0.4.6 (2024/09/17)");
 	sendPrivate(p, "[name: primbot.dll] [vanhelsing44@gmail.com]");
 }
 
@@ -996,8 +1018,8 @@ void botInfo::listDuels()
 		if(boxes[i].locked == true)
 		{
 			output = true;
-			std::stringstream sstma;
-			sstma << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name << " (" << boxes[i].player_1_score << " - " << boxes[i].player_2_score << ")";
+			std::stringstream sstma	;
+			sstma << "*arena Box " << (i + 1) << ": " << boxes[i].player_1->name << " vs " << boxes[i].player_2->name << " (" << boxes[i].player_1_score << "-" << boxes[i].player_2_score << ")";
 			std::string stra = sstma.str();
 			char *msga = &stra[0];
 			sendPublic(msga);
@@ -1235,6 +1257,8 @@ void botInfo::timerExpired(int idx)
 			printf("Warping players to safe locations...\n");
 			warpTo(boxes[idx].player_1, boxes[idx].p1_safe_x, boxes[idx].p1_safe_y);
 			warpTo(boxes[idx].player_2, boxes[idx].p2_safe_x, boxes[idx].p2_safe_y);
+			givePrizes(boxes[idx].player_1);
+			givePrizes(boxes[idx].player_2);
 			printf("Players warped.\n");
 			boxes[idx].timer = -1;
 			printf("Timer reset\n");
