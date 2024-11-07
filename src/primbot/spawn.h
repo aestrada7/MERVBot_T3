@@ -35,6 +35,12 @@ class BoxData
 		bool locked;
 };
 
+class Logger
+{
+	public:
+		static void log(const char *msg);
+};
+
 #define MAX_OBJECTS 20
 
 class botInfo
@@ -66,6 +72,9 @@ class botInfo
 
 	// Put bot data here
 	BoxData boxes[4];
+	char *botVersion;
+	char *botName;
+	char *botDLL;
 
 public:
 	botInfo(CALL_HANDLE given)
