@@ -136,10 +136,44 @@ void botInfo::gotCommand(Player *p, Command *c)
 		}
 	case OP_Player:
 		{	// Player-level commands
-			if (c->check("about"))
+			if (c->check("about") || c->check("version"))
 			{
-				sendPrivate(p, "I am a plain vanilla flavored bot.  Yup, just as plain and useless as can be.");
+				printf("[League] Sending !about or !version info...\n");
+				sendPrivate(p, "League Bot by VanHelsing. Version: 0.0.1 (2024/11/05)");
+				sendPrivate(p, "[name: leaguebot.dll] [vanhelsing44@gmail.com]");
 			}
+			/*
+			if (c->check("start"))
+			{
+				start();
+			}
+
+			if (c->check("status"))
+			{
+				sendStatus(p);
+			}
+
+			if (c->check("squads"))
+			{
+				char squadA[50], squadB[50];
+				sscanf(c->final, "-a=%s -b=%s", squadA, squadB);
+
+				setSquadNames(squadA, squadB);
+			}
+
+			if (c->check("freqs")
+			{
+				int teamA, teamB;
+				sscanf(c->final, "-a=%d -b=%d", &teamA, &teamB);
+
+				setFreqs(teamA, teamB);
+			}
+
+			if (c->check("teamsize"))
+			{
+				setTeamsize(atoi(c->final));
+			}
+			*/
 		}
 	}
 }

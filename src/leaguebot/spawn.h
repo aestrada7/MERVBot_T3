@@ -9,6 +9,7 @@
 #include "..\dllcore.h"
 
 #include "..\clientprot.h"
+#include <vector>
 
 struct PlayerTag
 {
@@ -18,6 +19,45 @@ struct PlayerTag
 };
 
 #define MAX_OBJECTS 20
+
+class MatchPlayer
+{
+	public:
+		char *name;
+		int lives;
+		int kills;
+		int assists;
+		int deaths;
+		int lagouts;
+		int forcedReps;
+		int teamkills;
+		float mvpPoints;
+		Player *player;
+};
+
+class Team
+{
+	public:
+		int freq;
+		char *squad;
+		int score;
+		std::vector<MatchPlayer> players;
+};
+
+class Match
+{
+	public:
+		int sideAX;
+		int sideAY;
+		int sideBX;
+		int sideBY;
+		int numPlayers;
+		int lives;
+		int duration;
+		bool lagEnforcing;
+		char *gameType;
+		Team teams[2];
+};
 
 class botInfo
 {
@@ -47,6 +87,7 @@ class botInfo
 	int countdown[4];
 
 	// Put bot data here
+	Match match;
 
 public:
 	botInfo(CALL_HANDLE given)
@@ -67,6 +108,7 @@ public:
 		object_dest = NULL;
 
 		// Put initial values here
+		Match match;
 	}
 
 	void clear_objects();
@@ -104,6 +146,27 @@ public:
 	void gotCommand(Player *p, Command *c);
 	void gotRemoteHelp(char *p, Command *c, Operator_Level l);
 	void gotRemote(char *p, Command *c, Operator_Level l);
+
+	char *getShipName(int id);
+	void warpTo(Player *p, int x, int y);
+
+	void findPlayersInFreqs();
+	void parseCommand(char* command);
+	void setSquads(char* command);
+	void setFreqs(const char* command);
+	void getStatus();
+	void startMatch();
+	void endMatch();
+	void prepareMatch();
+
+	Team* playerTeam(MatchPlayer& player);
+	MatchPlayer* findMatchPlayer(char* playerName);
+	void announceScore();
+	void checkRemainingMatchPlayers(Team* team);
+	void gameEnd();
+	void printScoreBoxTop(char* squadName);
+	void printMatchPlayerData(MatchPlayer p);
+	void printTeamData(Team t);
 };
 
 

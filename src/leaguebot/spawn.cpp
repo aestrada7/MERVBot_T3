@@ -63,6 +63,30 @@ void botInfo::gotEvent(BotEvent &event)
 			arena = (char*)event.p[0];
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
+
+			sendPublic("?grplogin sysop <PWD>"); // this should come from an .ini file, but for now we'll do it here
+
+			Team teamA;
+			teamA.freq = 0;
+			teamA.squad = "Squad A";
+			teamA.score = 0;
+
+			Team teamB;
+			teamB.freq = 1;
+			teamB.squad = "Squad B";
+			teamB.score = 0;
+
+			match.sideAX = 250;
+			match.sideAY = 380;
+			match.sideBX = 792;
+			match.sideBY = 695;
+			match.numPlayers = 3;
+			match.lives = 3;
+			match.duration = 20;
+			match.lagEnforcing = true;
+			match.gameType = "Unofficial";
+			match.teams[0] = teamA;
+			match.teams[1] = teamB;
 		}
 		break;
 	case EVENT_ArenaSettings:
@@ -298,6 +322,7 @@ void botInfo::gotEvent(BotEvent &event)
 				break;
 			case MSG_Public:			if (!p) break;
 				{
+					parseCommand(msg);
 				}
 				break;
 			case MSG_Team:				if (!p) break;
@@ -607,4 +632,240 @@ void botInfo::sendRemotePrivate(char *name, char *msg)
 	s += msg;
 
 	sendRemotePrivate(s);
+}
+
+//////// League Bot Auxiliary Functions ////////
+
+void botInfo::warpTo(Player* p, int x, int y)
+{
+	char out[255];
+	sprintf(out, "*warpto %d %d", x, y);
+	sendPrivate(p, out);
+}
+
+void botInfo::parseCommand(char* command)
+{
+	if(*command == '.')
+	{
+		char cmd[200];
+		const char delim[2] = "|";
+
+		strcpy(cmd, command);
+
+		char *token;
+		token = strtok(cmd, delim);
+
+		while(token != NULL)
+		{
+			char commandName[15];
+			char commandArgs[100];
+
+			size_t leadingSpaces = strspn(token, " ");
+			if (leadingSpaces > 0)
+			{
+				memmove(token, token + leadingSpaces, strlen(token + leadingSpaces) + 1);
+			}
+
+			char *space = strchr(token, ' ');
+
+			if(space != NULL)
+			{
+				strncpy(commandName, token, space - token);
+				commandName[space - token] = '\0';
+				strcpy(commandArgs, space + 1);
+			}
+			else
+			{
+				strcpy(commandName, token);
+			}
+
+			sendPublic(token);
+
+			if (strcmp(commandName, ".squads") == 0)
+			{
+				setSquads(commandArgs);
+			}
+			else if (strcmp(commandName, ".freqs") == 0)
+			{
+				setFreqs(commandArgs);
+			}
+			else if (strcmp(commandName, ".status") == 0)
+			{
+				printf("Getting status...\n");
+				getStatus();
+			}
+			else if (strcmp(commandName, ".start") == 0)
+			{
+				startMatch();
+			}
+			else if (strcmp(commandName, ".end") == 0)
+			{
+				//gameEnd();
+			}
+			else
+			{
+				char out[255];
+				sprintf(out, "Unknown command: %s", commandName);
+				sendPublic(out);
+			}
+
+			token = strtok(NULL, delim);
+		}
+	}
+}
+
+void botInfo::findPlayersInFreqs()
+{
+    _listnode <Player> *parse = playerlist->head;
+
+    while (parse)
+    {
+        Player *p = parse->item;
+
+		if(p->team == match.teams[0] && p->ship != SHIP_Spectator)
+		{
+			MatchPlayer mp;
+			mp.name = p->name;
+			mp.lives = 3;
+			mp.kills = 0;
+			mp.assists = 0;
+			mp.deaths = 0;
+			mp.lagouts = 0;
+			mp.forcedReps = 0;
+			mp.teamkills = 0;
+			mp.mvpPoints = 0;
+			mp.player = p;
+			match.teams[0].players.push_back(mp);
+		}
+
+		if(p->team == match.teams[1] && p->ship != SHIP_Spectator)
+		{
+			MatchPlayer mp;
+			mp.name = p->name;
+			mp.lives = 3;
+			mp.kills = 0;
+			mp.assists = 0;
+			mp.deaths = 0;
+			mp.lagouts = 0;
+			mp.forcedReps = 0;
+			mp.teamkills = 0;
+			mp.mvpPoints = 0;
+			mp.player = p;
+			match.teams[1].players.push_back(mp);
+		}
+
+        parse = parse->next;
+    }
+
+    sendPublic(match.teams[0].players[0].name);
+    sendPublic(match.teams[1].players[1].name);
+}
+
+//////// League Bot Commands ////////
+
+void botInfo::setSquads(char* squadStr)
+{
+	//todo: allow reuse of current squad names
+	//todo: allow only one parameter (either -a=x or -b=y)
+	//todo: allow spaces in squad a
+
+	char squadA[50] = "Team A";
+	char squadB[50] = "Team B";
+	//std::string squadA = match.teams[0].squad;
+	//std::string squadB = match.teams[1].squad;
+
+	//sscanf(squadStr, "-a=%[a-zA-Z0-9 ] -b=%[^\n]", squadA, squadB);
+	sscanf(squadStr, "-a=%[a-zA-Z0-9] -b=%[^\n]", squadA, squadB);
+
+	match.teams[0].squad = new char[strlen(squadA) + 1];
+	strcpy(match.teams[0].squad, squadA);
+	match.teams[1].squad = new char[strlen(squadB) + 1];
+	strcpy(match.teams[1].squad, squadB);
+
+	char out[255];
+	sprintf(out, "%s vs %s", match.teams[0].squad, match.teams[1].squad);
+	sendPublic(out);
+}
+
+void botInfo::setFreqs(const char* freqStr)
+{
+	int freqA = match.teams[0].freq;
+	int freqB = match.teams[1].freq;
+
+	sscanf(freqStr, "-a=%d -b=%d", &freqA, &freqB);
+
+	match.teams[0].freq = freqA;
+	match.teams[1].freq = freqB;
+
+	char out[255];
+	sprintf(out, "%s: %d  %s: %d", match.teams[0].squad, match.teams[0].freq, match.teams[1].squad, match.teams[1].freq);
+	sendPublic(out);
+}
+
+void botInfo::startMatch()
+{
+	sendPublic("*lock");
+	sendPublic("Starting in 10 seconds...");
+	//set a timer, skipping for now
+	prepareMatch();
+}
+
+void botInfo::prepareMatch()
+{
+	char out[255];
+	sprintf(out, "<----- %s vs %s ----->", match.teams[0].squad, match.teams[1].squad);
+	sendPublic(out);
+
+	for(int i = 0; i < match.teams[0].players.size(); i++)
+	{
+		MatchPlayer p = match.teams[0].players[i];
+		sendPublic(p.name);
+		warpTo(p.player, match.sideAX, match.sideAY);
+	}
+
+	for(int j = 0; i < match.teams[1].players.size(); j++)
+	{
+		MatchPlayer p = match.teams[1].players[j];
+		sendPublic(p.name);
+		warpTo(p.player, match.sideBX, match.sideBY);
+	}
+}
+
+void botInfo::endMatch()
+{
+	Team teamA;
+	teamA.freq = match.teams[0].freq;
+	teamA.squad = match.teams[0].squad;
+	teamA.score = 0;
+
+	Team teamB;
+	teamB.freq = match.teams[1].freq;
+	teamB.squad = match.teams[1].squad;
+	teamB.score = 0;
+
+	match.teams[0] = teamA;
+	match.teams[1] = teamB;
+}
+
+void botInfo::getStatus()
+{
+	char gameTxt[255];
+	char freqTxt[255];
+	char playTxt[255];
+	char durTxt[255];
+	char infoTxt[255] = "Lag limit enforcing: Enabled";
+	char typeTxt[255];
+
+	sprintf(gameTxt, "Game: %s vs %s", match.teams[0].squad, match.teams[1].squad);
+	sprintf(freqTxt, "On freqs: %d and %d", match.teams[0].freq, match.teams[1].freq);
+	sprintf(playTxt, "Deaths: %d Number of Players: %d", match.lives, match.numPlayers);
+	sprintf(durTxt, "Duration: %d Score: %d - %d", match.duration, match.teams[0].score, match.teams[1].score);
+	sprintf(typeTxt, "Game type: %s", match.gameType);
+
+	sendPublic(gameTxt);
+	sendPublic(freqTxt);
+	sendPublic(playTxt);
+	sendPublic(durTxt);
+	sendPublic(infoTxt);
+	sendPublic(typeTxt);
 }
