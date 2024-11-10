@@ -858,7 +858,7 @@ void botInfo::setSquads(Player *p, char* squadStr)
 	char out[255];
 	sprintf(out, "%s vs %s", match.teams[0].squad, match.teams[1].squad);
 	Logger::log(out);
-	sendPublic(out);
+	sendPrivate(p, out);
 }
 
 void botInfo::setFreqs(Player *p,const char* freqStr)
@@ -1152,7 +1152,7 @@ void botInfo::gameEnd()
 	
 	if(isTie)
 	{
-		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d", winner, loser, winnerScore, loserScore);
+		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, 5);
 	}
 	else
 	{
@@ -1177,39 +1177,39 @@ void botInfo::gameEnd()
 
 void botInfo::printScoreBoxTop(char* squadName)
 {
-    char c = '-';
-    int totalLength = 127;
-    int startLength = 22;
-    char out[128];
-    char squad[50];
+	char c = '-';
+	int totalLength = 127;
+	int startLength = 22;
+	char out[128];
+	char squad[50];
 
-    sprintf(squad, " %s ", squadName);
+	sprintf(squad, " %s ", squadName);
 
-    memset(out, c, totalLength);
-    out[totalLength] = '\0';
-    strncpy(out + startLength, squad, strlen(squad));
+	memset(out, c, totalLength);
+	out[totalLength] = '\0';
+	strncpy(out + startLength, squad, strlen(squad));
 
 	char finalOutput[300];
 	sprintf(finalOutput, "*arena %s", out);
-    sendPublic(finalOutput);
+	sendPublic(finalOutput);
 }
 
 void botInfo::printPlayerData(MatchPlayer p)
 {
-    char out[255];
-    sprintf(out, "*arena Name: %-22s Kills: %-3d Deaths: %-3d TeamKills: %-3d Lagouts: %-3d Assists: %-3d Forced Reps: %-3d MVP Points: %.2f", p.name, p.kills, p.deaths, p.teamkills, p.lagouts, p.assists, p.forcedReps, p.mvpPoints);
-    sendPublic(out);
+	char out[255];
+	sprintf(out, "*arena Name: %-22s Kills: %-3d Deaths: %-3d TeamKills: %-3d Lagouts: %-3d Assists: %-3d Forced Reps: %-3d MVP Points: %.2f", p.name, p.kills, p.deaths, p.teamkills, p.lagouts, p.assists, p.forcedReps, p.mvpPoints);
+	sendPublic(out);
 }
 
 void botInfo::printTeamData(Team t)
 {
-    char out[255];
-    int kills = 0;
-    int deaths = 0;
-    int teamkills = 0;
-    int lagouts = 0;
-    int assists = 0;
-    int forcedReps = 0;
+	char out[255];
+	int kills = 0;
+	int deaths = 0;
+	int teamkills = 0;
+	int lagouts = 0;
+	int assists = 0;
+	int forcedReps = 0;
 
 	for(int i = 0; i < t.players.size(); i++)
 	{
@@ -1222,8 +1222,8 @@ void botInfo::printTeamData(Team t)
 		forcedReps += p.forcedReps;
 	}
 
-    sprintf(out, "*arena TEAM TOTALS -                Kills: %-3d Deaths: %-3d TeamKills: %-3d Lagouts: %-3d Assists: %-3d Forced Reps: %-3d", kills, deaths, teamkills, lagouts, assists, forcedReps);
-    sendPublic(out);
+	sprintf(out, "*arena TEAM TOTALS -                Kills: %-3d Deaths: %-3d TeamKills: %-3d Lagouts: %-3d Assists: %-3d Forced Reps: %-3d", kills, deaths, teamkills, lagouts, assists, forcedReps);
+	sendPublic(out);
 }
 
 
