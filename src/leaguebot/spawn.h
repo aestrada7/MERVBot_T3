@@ -56,7 +56,14 @@ class Match
 		int duration;
 		bool lagEnforcing;
 		char *gameType;
+		bool locked;
 		Team teams[2];
+};
+
+class Logger
+{
+	public:
+		static void log(const char *msg);
 };
 
 class botInfo
@@ -88,6 +95,9 @@ class botInfo
 
 	// Put bot data here
 	Match match;
+	char *botVersion;
+	char *botName;
+	char *botDLL;
 
 public:
 	botInfo(CALL_HANDLE given)
@@ -151,22 +161,25 @@ public:
 	void warpTo(Player *p, int x, int y);
 
 	void findPlayersInFreqs();
-	void parseCommand(char* command);
-	void setSquads(char* command);
-	void setFreqs(const char* command);
-	void getStatus();
+	void parseCommand(Player *p, char* command);
+	void setSquads(Player *p, char* command);
+	void setFreqs(Player *p, const char* command);
+	void getStatus(Player *p);
 	void startMatch();
 	void endMatch();
 	void prepareMatch();
+	void aboutBot(Player *p);
 
-	Team* playerTeam(MatchPlayer& player);
+	Team* playerTeam(Player *p);
+	MatchPlayer* findPlayer(char* playerName);
 	MatchPlayer* findMatchPlayer(char* playerName);
 	void announceScore();
-	void checkRemainingMatchPlayers(Team* team);
+	void checkRemainingPlayers(Team* team);
 	void gameEnd();
 	void printScoreBoxTop(char* squadName);
-	void printMatchPlayerData(MatchPlayer p);
+	void printPlayerData(MatchPlayer p);
 	void printTeamData(Team t);
+	void playerKilled(Player* p, Player* k);
 };
 
 

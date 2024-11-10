@@ -8,6 +8,10 @@
 #include "..\player.cpp"
 #include "..\commtypes.cpp"
 
+#include <iostream>
+#include <fstream>
+#include <ctime>
+
 #define UNASSIGNED 0xffff
 
 
@@ -64,6 +68,15 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
+			botVersion = "0.0.7 (2024/11/10)";
+			botName = "T3 League Bot";
+			botDLL = "leaguebot.dll";
+
+			char logVersion[256];
+			sprintf(logVersion, "%s by VanHelsing. Version: %s\n[name: %s] [vanhelsing44@gmail.com]", botName, botVersion, botDLL);
+			Logger::log("Bot connected to arena.");
+			Logger::log(logVersion);
+
 			sendPublic("?grplogin sysop <PWD>"); // this should come from an .ini file, but for now we'll do it here
 
 			Team teamA;
@@ -85,6 +98,7 @@ void botInfo::gotEvent(BotEvent &event)
 			match.duration = 20;
 			match.lagEnforcing = true;
 			match.gameType = "Unofficial";
+			match.locked = false;
 			match.teams[0] = teamA;
 			match.teams[1] = teamB;
 		}
@@ -207,6 +221,8 @@ void botInfo::gotEvent(BotEvent &event)
 				   *k = (Player*)event.p[1];
 			Uint16 bounty = (Uint16)(Uint32)event.p[2];
 			Uint16 flags = (Uint16)event.p[3];
+
+			playerKilled(p, k);
 		}
 		break;
 	case EVENT_BannerChanged:
@@ -322,7 +338,12 @@ void botInfo::gotEvent(BotEvent &event)
 				break;
 			case MSG_Public:			if (!p) break;
 				{
-					parseCommand(msg);
+					char output[1024];
+					sprintf(output, "%s> %s", p->name, msg);
+					Logger::log("Public message received:");
+					Logger::log(output);
+
+					parseCommand(p, msg);
 				}
 				break;
 			case MSG_Team:				if (!p) break;
@@ -636,14 +657,14 @@ void botInfo::sendRemotePrivate(char *name, char *msg)
 
 //////// League Bot Auxiliary Functions ////////
 
-void botInfo::warpTo(Player* p, int x, int y)
+void botInfo::warpTo(Player *p, int x, int y)
 {
 	char out[255];
 	sprintf(out, "*warpto %d %d", x, y);
 	sendPrivate(p, out);
 }
 
-void botInfo::parseCommand(char* command)
+void botInfo::parseCommand(Player *p, char* command)
 {
 	if(*command == '.')
 	{
@@ -677,22 +698,24 @@ void botInfo::parseCommand(char* command)
 			else
 			{
 				strcpy(commandName, token);
+				commandArgs[0] = '\0';
 			}
 
-			sendPublic(token);
+			char msg[255];
+			sprintf(msg, "Command '%s' discovered with args '%s'", commandName, commandArgs);
+			Logger::log(msg);
 
 			if (strcmp(commandName, ".squads") == 0)
 			{
-				setSquads(commandArgs);
+				setSquads(p, commandArgs);
 			}
 			else if (strcmp(commandName, ".freqs") == 0)
 			{
-				setFreqs(commandArgs);
+				setFreqs(p, commandArgs);
 			}
 			else if (strcmp(commandName, ".status") == 0)
 			{
-				printf("Getting status...\n");
-				getStatus();
+				getStatus(p);
 			}
 			else if (strcmp(commandName, ".start") == 0)
 			{
@@ -700,13 +723,14 @@ void botInfo::parseCommand(char* command)
 			}
 			else if (strcmp(commandName, ".end") == 0)
 			{
-				//gameEnd();
+				gameEnd();
 			}
 			else
 			{
 				char out[255];
 				sprintf(out, "Unknown command: %s", commandName);
-				sendPublic(out);
+				Logger::log(out);
+				sendPrivate(p, out);
 			}
 
 			token = strtok(NULL, delim);
@@ -716,13 +740,16 @@ void botInfo::parseCommand(char* command)
 
 void botInfo::findPlayersInFreqs()
 {
-    _listnode <Player> *parse = playerlist->head;
+	Logger::log("Finding players in freqs...");
+	char out[255];
 
-    while (parse)
-    {
-        Player *p = parse->item;
+	_listnode <Player> *parse = playerlist->head;
 
-		if(p->team == match.teams[0] && p->ship != SHIP_Spectator)
+	while (parse)
+	{
+		Player *p = parse->item;
+
+		if(p->team == match.teams[0].freq && p->ship != SHIP_Spectator)
 		{
 			MatchPlayer mp;
 			mp.name = p->name;
@@ -736,9 +763,12 @@ void botInfo::findPlayersInFreqs()
 			mp.mvpPoints = 0;
 			mp.player = p;
 			match.teams[0].players.push_back(mp);
+
+			sprintf(out, "Found player %s in freq %d.", p->name, p->team);
+			Logger::log(out);
 		}
 
-		if(p->team == match.teams[1] && p->ship != SHIP_Spectator)
+		if(p->team == match.teams[1].freq && p->ship != SHIP_Spectator)
 		{
 			MatchPlayer mp;
 			mp.name = p->name;
@@ -752,19 +782,62 @@ void botInfo::findPlayersInFreqs()
 			mp.mvpPoints = 0;
 			mp.player = p;
 			match.teams[1].players.push_back(mp);
+
+			sprintf(out, "Found player %s in freq %d.", p->name, p->team);
+			Logger::log(out);
 		}
 
-        parse = parse->next;
-    }
+		parse = parse->next;
+	}
+}
 
-    sendPublic(match.teams[0].players[0].name);
-    sendPublic(match.teams[1].players[1].name);
+Team* botInfo::playerTeam(Player *p)
+{
+	for(int i = 0; i < 2; i++)
+	{
+		for(int j = 0; j < match.teams[i].players.size(); j++)
+		{
+			MatchPlayer mp = match.teams[i].players[j];
+			if(strcmp(p->name, mp.name) == 0)
+			{
+				return &match.teams[i];
+			}
+		}
+	}
+	Team t;
+	return &t;
+}
+
+MatchPlayer* botInfo::findPlayer(char* playerName)
+{
+	char out[255];
+	sprintf(out, "Looking for player %s", playerName);
+	Logger::log(out);
+
+	for(int i = 0; i < 2; i++)
+	{
+		for(int j = 0; j < match.teams[i].players.size(); j++)
+		{
+			MatchPlayer* mp = &match.teams[i].players[j];
+			if(strcmp(playerName, mp->name) == 0)
+			{
+				sprintf(out, "Found player %s in freq %d.", mp->name, mp->player->team);
+				Logger::log(out);
+				return mp;
+			}
+		}
+	}
+
+	Logger::log("Player not found.");
+	MatchPlayer* empty;
+	return empty;
 }
 
 //////// League Bot Commands ////////
 
-void botInfo::setSquads(char* squadStr)
+void botInfo::setSquads(Player *p, char* squadStr)
 {
+	Logger::log("Setting squad names...");
 	//todo: allow reuse of current squad names
 	//todo: allow only one parameter (either -a=x or -b=y)
 	//todo: allow spaces in squad a
@@ -784,11 +857,13 @@ void botInfo::setSquads(char* squadStr)
 
 	char out[255];
 	sprintf(out, "%s vs %s", match.teams[0].squad, match.teams[1].squad);
+	Logger::log(out);
 	sendPublic(out);
 }
 
-void botInfo::setFreqs(const char* freqStr)
+void botInfo::setFreqs(Player *p,const char* freqStr)
 {
+	Logger::log("Setting freqs...");
 	int freqA = match.teams[0].freq;
 	int freqB = match.teams[1].freq;
 
@@ -799,13 +874,16 @@ void botInfo::setFreqs(const char* freqStr)
 
 	char out[255];
 	sprintf(out, "%s: %d  %s: %d", match.teams[0].squad, match.teams[0].freq, match.teams[1].squad, match.teams[1].freq);
-	sendPublic(out);
+	Logger::log(out);
+	sendPrivate(p, out);
 }
 
 void botInfo::startMatch()
 {
+	Logger::log("Start command receieved. Starting match.");
 	sendPublic("*lock");
-	sendPublic("Starting in 10 seconds...");
+	sendPublic("*arena Starting in 10 seconds...");
+	findPlayersInFreqs();
 	//set a timer, skipping for now
 	prepareMatch();
 }
@@ -813,22 +891,28 @@ void botInfo::startMatch()
 void botInfo::prepareMatch()
 {
 	char out[255];
-	sprintf(out, "<----- %s vs %s ----->", match.teams[0].squad, match.teams[1].squad);
+	sprintf(out, "*arena <----- %s vs %s ----->", match.teams[0].squad, match.teams[1].squad);
 	sendPublic(out);
+	Logger::log(out);
 
+	Logger::log("Warping players to their starting spots...");
 	for(int i = 0; i < match.teams[0].players.size(); i++)
 	{
 		MatchPlayer p = match.teams[0].players[i];
-		sendPublic(p.name);
+		sprintf(out, "Warping %s", p.name);
+		Logger::log(out);
 		warpTo(p.player, match.sideAX, match.sideAY);
 	}
 
-	for(int j = 0; i < match.teams[1].players.size(); j++)
+	for(int j = 0; j < match.teams[1].players.size(); j++)
 	{
-		MatchPlayer p = match.teams[1].players[j];
-		sendPublic(p.name);
-		warpTo(p.player, match.sideBX, match.sideBY);
+		MatchPlayer px = match.teams[1].players[j];
+		sprintf(out, "Warping %s", px.name);
+		Logger::log(out);
+		warpTo(px.player, match.sideBX, match.sideBY);
 	}
+	match.locked = true;
+	Logger::log("Match locked and started!");
 }
 
 void botInfo::endMatch()
@@ -847,8 +931,9 @@ void botInfo::endMatch()
 	match.teams[1] = teamB;
 }
 
-void botInfo::getStatus()
+void botInfo::getStatus(Player *p)
 {
+	Logger::log("Getting status...");
 	char gameTxt[255];
 	char freqTxt[255];
 	char playTxt[255];
@@ -862,10 +947,330 @@ void botInfo::getStatus()
 	sprintf(durTxt, "Duration: %d Score: %d - %d", match.duration, match.teams[0].score, match.teams[1].score);
 	sprintf(typeTxt, "Game type: %s", match.gameType);
 
-	sendPublic(gameTxt);
-	sendPublic(freqTxt);
-	sendPublic(playTxt);
-	sendPublic(durTxt);
-	sendPublic(infoTxt);
-	sendPublic(typeTxt);
+	sendPrivate(p, gameTxt);
+	sendPrivate(p, freqTxt);
+	sendPrivate(p, playTxt);
+	sendPrivate(p, durTxt);
+	sendPrivate(p, infoTxt);
+	sendPrivate(p, typeTxt);
+
+	char out[512];
+	sprintf(out, "\n%s\n%s\n%s\n%s\n%s\n%s\n", gameTxt, freqTxt, playTxt, durTxt, infoTxt, typeTxt);
+	Logger::log(out);
+}
+
+void botInfo::aboutBot(Player *p)
+{
+	char logmsg[100];
+	sprintf(logmsg, "Sending !about or !version info to %s", p->name);
+	Logger::log(logmsg);
+	
+	char aboutMsg[100];
+	sprintf(aboutMsg, "%s by VanHelsing. Version: %s", botName, botVersion);
+	char aboutMsg2[100];
+	sprintf(aboutMsg2, "[name: %s] [vanhelsing44@gmail.com]", botName);
+
+	sendPrivate(p, aboutMsg);
+	sendPrivate(p, aboutMsg2);
+}
+
+//////// League Bot Events ////////
+
+void botInfo::playerKilled(Player *p, Player *k)
+{
+	if(match.locked)
+	{
+		char out[255];
+		sprintf(out, "%s killed by %s", p->name, k->name);
+		Logger::log(out);
+
+		Team* teamKilled = playerTeam(p);
+		Team* teamKiller = playerTeam(k);
+
+		sprintf(out, "Retrieving MatchPlayer object for %s (killed)", p->name);
+		Logger::log(out);
+		MatchPlayer* killed = findPlayer(p->name);
+
+		sprintf(out, "Retrieving MatchPlayer object for %s (killer)", k->name);
+		Logger::log(out);
+		MatchPlayer* killer = findPlayer(k->name);
+
+		//TODO: if player not in match it kills the program
+
+		char tkTxt[20] = " - Teamkill! ";
+		bool isTeamkill = false;
+
+		if(teamKilled->freq != teamKiller->freq)
+		{
+			killer->kills += 1;
+			killer->mvpPoints += 2;
+
+			teamKiller->score += 1;
+		}
+		else
+		{
+			isTeamkill = true;
+			killer->teamkills += 1;
+			killer->mvpPoints -= 0.5;
+
+			if(match.teams[0].freq != teamKilled->freq)
+			{
+				match.teams[0].score += 1;
+			}
+			else if(match.teams[1].freq != teamKilled->freq)
+			{
+				match.teams[1].score += 1;
+			}
+		}
+
+		killed->deaths += 1;
+		killed->lives -= 1;
+
+		char msg[255];
+		if(killed->lives == 0)
+		{
+			int countOut = 0;
+
+			for(int i = 0; i < 2; i++)
+			{
+				for(int j = 0; j < match.teams[i].players.size(); j++)
+				{
+					MatchPlayer p = match.teams[i].players[j];
+					if(p.lives == 0)
+					{
+						countOut += 1;
+					}
+				}
+			}
+
+			if(countOut == 1)
+			{
+				killed->mvpPoints -= 2;
+			}
+			sprintf(msg, "*arena (OUT) %s kb %s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : " "), "02:22");
+			sendPrivate(p, "*setship 9");
+		}
+		else
+		{
+			sprintf(msg, "*arena (%d/%d) %s kb %s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), "02:22");
+		}
+
+		sendPublic(msg);
+		Logger::log(msg);
+		announceScore();
+		checkRemainingPlayers(teamKilled);
+	}
+}
+
+void botInfo::checkRemainingPlayers(Team* team)
+{
+	char out[255];
+	sprintf(out, "Player died out, checking remaining players in freq %d (%s)", team->freq, team->squad);
+	Logger::log(out);
+	bool gameFinished = true;
+
+	for(int i = 0; i < team->players.size(); i++)
+	{
+		MatchPlayer* p = &team->players[i];
+		sprintf(out, "Found player %s in freq %d with %d lives", p->name, team->freq, p->lives);
+		Logger::log(out);
+
+		if(p->lives > 0)
+		{
+			Logger::log("Player still alive, continuing match...");
+			gameFinished = false;
+		}
+	}
+
+	if(gameFinished)
+	{
+		Logger::log("All players dead, ending match.");
+		gameEnd();
+	}
+}
+
+void botInfo::gameEnd()
+{
+	Logger::log("Ending game...");
+	char* winner;
+	char* loser;
+	int winnerScore;
+	int loserScore;
+	char out[255];
+	char* mvp;
+	float mvpPoints = -5;
+	int mvpK = 0;
+	int mvpD = 0;
+	bool isTie = false;
+	bool mvpFound = false;
+
+	if(match.teams[0].score > match.teams[1].score)
+	{
+		winner = match.teams[0].squad;
+		loser = match.teams[1].squad;
+		winnerScore = match.teams[0].score;
+		loserScore = match.teams[1].score;
+	}
+	else if(match.teams[1].score > match.teams[0].score)
+	{
+		winner = match.teams[1].squad;
+		loser = match.teams[0].squad;
+		winnerScore = match.teams[1].score;
+		loserScore = match.teams[0].score;
+	}
+	else
+	{
+		isTie = true;
+		winner = match.teams[0].squad;
+		loser = match.teams[1].squad;
+		winnerScore = match.teams[0].score;
+		loserScore = match.teams[1].score;
+	}
+
+	for(int i = 0; i < 2; i++)
+	{
+		printScoreBoxTop(match.teams[i].squad);
+		for(int j = 0; j < match.teams[i].players.size(); j++)
+		{
+			MatchPlayer p = match.teams[i].players[j];
+			printPlayerData(p);
+			if(p.mvpPoints > mvpPoints)
+			{
+				mvpPoints = p.mvpPoints;
+				mvp = p.name;
+				mvpK = p.kills;
+				mvpD = p.deaths;
+				mvpFound = true;
+			}
+		}
+		printTeamData(match.teams[i]);
+	}
+
+	sendPublic("*arena Game Over!");
+	sendPublic("*lock");
+	match.locked = false;
+	
+	if(isTie)
+	{
+		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d", winner, loser, winnerScore, loserScore);
+	}
+	else
+	{
+		sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, 5);
+	}
+	sendPublic(out);
+	Logger::log(out);
+
+	if(mvpFound)
+	{
+		sprintf(out, "*arena MVP: %s (%.2f pts, %d-%d)", mvp, mvpPoints, mvpK, mvpD);
+		Logger::log(out);
+		sendPublic(out);
+	}
+	else
+	{
+		Logger::log("No MVP.");
+	}
+
+	endMatch();
+}
+
+void botInfo::printScoreBoxTop(char* squadName)
+{
+    char c = '-';
+    int totalLength = 127;
+    int startLength = 22;
+    char out[128];
+    char squad[50];
+
+    sprintf(squad, " %s ", squadName);
+
+    memset(out, c, totalLength);
+    out[totalLength] = '\0';
+    strncpy(out + startLength, squad, strlen(squad));
+
+	char finalOutput[300];
+	sprintf(finalOutput, "*arena %s", out);
+    sendPublic(finalOutput);
+}
+
+void botInfo::printPlayerData(MatchPlayer p)
+{
+    char out[255];
+    sprintf(out, "*arena Name: %-22s Kills: %-3d Deaths: %-3d TeamKills: %-3d Lagouts: %-3d Assists: %-3d Forced Reps: %-3d MVP Points: %.2f", p.name, p.kills, p.deaths, p.teamkills, p.lagouts, p.assists, p.forcedReps, p.mvpPoints);
+    sendPublic(out);
+}
+
+void botInfo::printTeamData(Team t)
+{
+    char out[255];
+    int kills = 0;
+    int deaths = 0;
+    int teamkills = 0;
+    int lagouts = 0;
+    int assists = 0;
+    int forcedReps = 0;
+
+	for(int i = 0; i < t.players.size(); i++)
+	{
+		MatchPlayer p = t.players[i];
+		kills += p.kills;
+		deaths += p.deaths;
+		teamkills += p.teamkills;
+		lagouts += p.lagouts;
+		assists += p.assists;
+		forcedReps += p.forcedReps;
+	}
+
+    sprintf(out, "*arena TEAM TOTALS -                Kills: %-3d Deaths: %-3d TeamKills: %-3d Lagouts: %-3d Assists: %-3d Forced Reps: %-3d", kills, deaths, teamkills, lagouts, assists, forcedReps);
+    sendPublic(out);
+}
+
+
+void botInfo::announceScore()
+{
+	char* leadingTeam;
+	char msg[255];
+	int leadingScore;
+	int trailingScore;
+
+	if(match.teams[0].score > match.teams[1].score)
+	{
+		leadingTeam = match.teams[0].squad;
+		leadingScore = match.teams[0].score;
+		trailingScore = match.teams[1].score;
+	}
+	else if(match.teams[1].score > match.teams[0].score)
+	{
+		leadingTeam = match.teams[1].squad;
+		leadingScore = match.teams[1].score;
+		trailingScore = match.teams[0].score;
+	}
+	else
+	{
+		leadingTeam = "Tie";
+		leadingScore = match.teams[0].score;
+		trailingScore = leadingScore;
+	}
+	sprintf(msg, "*arena Score %d - %d %s", leadingScore, trailingScore, leadingTeam);
+	Logger::log(msg);
+	sendPublic(msg);
+}
+
+///// Logging /////
+
+void Logger::log(const char *msg)
+{
+	time_t now = time(0);
+	tm* timeInfo = localtime(&now);
+	char timestamp[20];
+	strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", timeInfo);
+
+	std::ofstream logFile("leaguebot.log", std::ios::app);
+	if(logFile.is_open())
+	{
+		logFile << "[" << timestamp << "]  " << msg << std::endl;
+		logFile.close();
+	}
+	printf("%s\n", msg);
 }
