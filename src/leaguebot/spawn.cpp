@@ -8,9 +8,11 @@
 #include "..\player.cpp"
 #include "..\commtypes.cpp"
 
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <stdexcept>
 
 #define UNASSIGNED 0xffff
 
@@ -57,8 +59,48 @@ void botInfo::gotEvent(BotEvent &event)
 //////// Periodic ////////
 	case EVENT_Tick:
 		{
-			for (int i = 0; i < 4; ++i)
-				--countdown[i];
+			if(match.countdown > -1)
+			{
+				match.countdown--;
+				if(match.countdown > 0 && match.countdown <= 3)
+				{
+					char ctd[10];
+					sprintf(ctd, "*arena %d", match.countdown);
+					sendPublic(ctd);
+				}
+				else if(match.countdown == 0)
+				{
+					Logger::log("Countdown expired. Preparing match.");
+					sendPublic("*arena Go!");
+					prepareMatch();
+				}
+			}
+
+			if(match.timer > -1)
+			{
+				match.timer--;
+				match.elapsed++;
+			}
+
+			for(int i = 0; i < 2; i++)
+			{
+				for(int j = 0; j < match.teams[i].players.size(); j++)
+				{
+					MatchPlayer* mp = &match.teams[i].players[j];
+					if(mp->timer > -1)
+					{
+						mp->timer--;
+
+						if(mp->timer == 0)
+						{
+							mp->shipLocked = true;
+							char out[256];
+							sprintf(out, "Player %s's ship change timer expired.", mp->name);
+							Logger::log(out);
+						}
+					}
+				}
+			}
 		}
 		break;
 //////// Arena ////////
@@ -68,7 +110,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.0.7 (2024/11/10)";
+			botVersion = "0.1.8 (2024/11/11)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -99,6 +141,9 @@ void botInfo::gotEvent(BotEvent &event)
 			match.lagEnforcing = true;
 			match.gameType = "Unofficial";
 			match.locked = false;
+			match.countdown = -1;
+			match.timer = -1;
+			match.elapsed = 0;
 			match.teams[0] = teamA;
 			match.teams[1] = teamB;
 		}
@@ -664,6 +709,41 @@ void botInfo::warpTo(Player *p, int x, int y)
 	sendPrivate(p, out);
 }
 
+char *botInfo::getShipName(int id)
+{
+	switch(id)
+	{
+		case SHIP_Warbird:		return "Warbird";
+		case SHIP_Javelin:		return "Javelin";
+		case SHIP_Spider:		return "Spider";
+		case SHIP_Leviathan:	return "Leviathan";
+		case SHIP_Terrier:		return "Terrier";
+		case SHIP_Weasel:		return "Weasel";
+		case SHIP_Lancaster:	return "Lancaster";
+		case SHIP_Shark:		return "Shark";
+		case SHIP_Spectator:	return "Spectator";
+	}
+	return "";
+};
+
+char *botInfo::getReadableElapsed(bool showSeconds)
+{
+	char* timeStr = new char[6];
+	int minutes = match.elapsed / 60;
+	if(showSeconds)
+	{
+		int seconds = match.elapsed % 60;
+		sprintf(timeStr, "%02d:%02d", minutes, seconds);
+	}
+	else
+	{
+		sprintf(timeStr, "%d", minutes);
+	}
+	return timeStr;
+}
+
+//////// League Bot Common Functions ////////
+
 void botInfo::parseCommand(Player *p, char* command)
 {
 	if(*command == '.')
@@ -725,6 +805,10 @@ void botInfo::parseCommand(Player *p, char* command)
 			{
 				gameEnd();
 			}
+			else if (strcmp(commandName, ".sc") == 0)
+			{
+				shipChange(p, commandArgs);
+			}
 			else
 			{
 				char out[255];
@@ -761,7 +845,10 @@ void botInfo::findPlayersInFreqs()
 			mp.forcedReps = 0;
 			mp.teamkills = 0;
 			mp.mvpPoints = 0;
+			mp.shipLocked = false;
+			mp.timer = -1;
 			mp.player = p;
+
 			match.teams[0].players.push_back(mp);
 
 			sprintf(out, "Found player %s in freq %d.", p->name, p->team);
@@ -780,7 +867,10 @@ void botInfo::findPlayersInFreqs()
 			mp.forcedReps = 0;
 			mp.teamkills = 0;
 			mp.mvpPoints = 0;
+			mp.shipLocked = false;
+			mp.timer = -1;
 			mp.player = p;
+
 			match.teams[1].players.push_back(mp);
 
 			sprintf(out, "Found player %s in freq %d.", p->name, p->team);
@@ -835,7 +925,7 @@ MatchPlayer* botInfo::findPlayer(char* playerName)
 
 //////// League Bot Commands ////////
 
-void botInfo::setSquads(Player *p, char* squadStr)
+void botInfo::setSquads(Player *p, const char* squadStr)
 {
 	Logger::log("Setting squad names...");
 	//todo: allow reuse of current squad names
@@ -861,7 +951,7 @@ void botInfo::setSquads(Player *p, char* squadStr)
 	sendPrivate(p, out);
 }
 
-void botInfo::setFreqs(Player *p,const char* freqStr)
+void botInfo::setFreqs(Player *p, const char* freqStr)
 {
 	Logger::log("Setting freqs...");
 	int freqA = match.teams[0].freq;
@@ -881,11 +971,16 @@ void botInfo::setFreqs(Player *p,const char* freqStr)
 void botInfo::startMatch()
 {
 	Logger::log("Start command receieved. Starting match.");
+	
+	//subgame locking
 	sendPublic("*lock");
+	//asss locking
+	sendPublic("?lockarena -n");
+
 	sendPublic("*arena Starting in 10 seconds...");
 	findPlayersInFreqs();
-	//set a timer, skipping for now
-	prepareMatch();
+
+	match.countdown = 10;
 }
 
 void botInfo::prepareMatch()
@@ -894,6 +989,8 @@ void botInfo::prepareMatch()
 	sprintf(out, "*arena <----- %s vs %s ----->", match.teams[0].squad, match.teams[1].squad);
 	sendPublic(out);
 	Logger::log(out);
+
+	match.timer = match.duration * 60;
 
 	Logger::log("Warping players to their starting spots...");
 	for(int i = 0; i < match.teams[0].players.size(); i++)
@@ -929,6 +1026,10 @@ void botInfo::endMatch()
 
 	match.teams[0] = teamA;
 	match.teams[1] = teamB;
+
+	match.countdown = -1;
+	match.timer = -1;
+	match.elapsed = 0;
 }
 
 void botInfo::getStatus(Player *p)
@@ -974,10 +1075,55 @@ void botInfo::aboutBot(Player *p)
 	sendPrivate(p, aboutMsg2);
 }
 
+void botInfo::shipChange(Player *p, const char* shipStr)
+{
+	char out[255];
+	sprintf(out, "Player %s attempting to change ship to %s", p->name, shipStr);
+	Logger::log(out);
+
+	MatchPlayer* mp = findPlayer(p->name);
+
+	if(!mp->shipLocked)
+	{
+		int shipNumber = -1;
+		shipNumber = atoi(shipStr);
+		sprintf(out, "Discovered ship number: %d", shipNumber);
+		Logger::log(out);
+
+		if(shipNumber >= SHIP_Warbird && shipNumber < SHIP_Spectator)
+		{
+			sprintf(out, "*setship %d", shipNumber);
+			sendPrivate(p, out);
+
+			sprintf(out, "*arena %s changes ships", p->name);
+			sendPublic(out);
+
+			sprintf(out, "Player %s changed ship to %s", p->name, getShipName(shipNumber - 1));
+			Logger::log(out);
+
+			mp->shipLocked = true;
+		}
+		else
+		{
+			sprintf(out, "Invalid ship number.");
+			sendPrivate(p, out);
+			Logger::log(out);
+		}
+	}
+	else
+	{
+		sprintf(out, "Ship change failed. 10 seconds have passed.");
+		sendPrivate(p, out);
+		Logger::log(out);
+	}
+}
+
 //////// League Bot Events ////////
 
 void botInfo::playerKilled(Player *p, Player *k)
 {
+	const int SHIP_CHANGE_TIME = 10;
+
 	if(match.locked)
 	{
 		char out[255];
@@ -999,6 +1145,9 @@ void botInfo::playerKilled(Player *p, Player *k)
 
 		char tkTxt[20] = " - Teamkill! ";
 		bool isTeamkill = false;
+
+		killed->shipLocked = false;
+		killed->timer = SHIP_CHANGE_TIME;
 
 		if(teamKilled->freq != teamKiller->freq)
 		{
@@ -1047,16 +1196,19 @@ void botInfo::playerKilled(Player *p, Player *k)
 			{
 				killed->mvpPoints -= 2;
 			}
-			sprintf(msg, "*arena (OUT) %s kb %s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : " "), "02:22");
+			sprintf(msg, "*arena (OUT) %s kb %s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : " "), getReadableElapsed(true));
 			sendPrivate(p, "*setship 9");
 		}
 		else
 		{
-			sprintf(msg, "*arena (%d/%d) %s kb %s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), "02:22");
+			sprintf(msg, "*arena (%d/%d) %s kb %s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), getReadableElapsed(true));
 		}
 
 		sendPublic(msg);
 		Logger::log(msg);
+
+		sprintf(msg, "You have 10 seconds to change ship, type .sc # to do so.");
+		sendPrivate(p, msg);
 		announceScore();
 		checkRemainingPlayers(teamKilled);
 	}
@@ -1065,7 +1217,7 @@ void botInfo::playerKilled(Player *p, Player *k)
 void botInfo::checkRemainingPlayers(Team* team)
 {
 	char out[255];
-	sprintf(out, "Player died out, checking remaining players in freq %d (%s)", team->freq, team->squad);
+	sprintf(out, "Player died, checking remaining players in freq %d (%s)", team->freq, team->squad);
 	Logger::log(out);
 	bool gameFinished = true;
 
@@ -1147,16 +1299,21 @@ void botInfo::gameEnd()
 	}
 
 	sendPublic("*arena Game Over!");
+
+	//subgame unlocking
 	sendPublic("*lock");
+	//asss unlocking
+	sendPublic("?unlockarena -n");
+
 	match.locked = false;
 	
 	if(isTie)
 	{
-		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, 5);
+		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
 	}
 	else
 	{
-		sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, 5);
+		sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
 	}
 	sendPublic(out);
 	Logger::log(out);
@@ -1274,3 +1431,5 @@ void Logger::log(const char *msg)
 	}
 	printf("%s\n", msg);
 }
+
+//todo: implement lagout functionality and give 1 minute to return

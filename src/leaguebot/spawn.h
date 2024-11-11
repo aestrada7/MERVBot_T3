@@ -32,6 +32,8 @@ class MatchPlayer
 		int forcedReps;
 		int teamkills;
 		float mvpPoints;
+		bool shipLocked;
+		int timer;
 		Player *player;
 };
 
@@ -57,6 +59,9 @@ class Match
 		bool lagEnforcing;
 		char *gameType;
 		bool locked;
+		int countdown;
+		int timer;
+		int elapsed;
 		Team teams[2];
 };
 
@@ -159,16 +164,18 @@ public:
 
 	char *getShipName(int id);
 	void warpTo(Player *p, int x, int y);
+	char *getReadableElapsed();
 
 	void findPlayersInFreqs();
 	void parseCommand(Player *p, char* command);
-	void setSquads(Player *p, char* command);
+	void setSquads(Player *p, const char* command);
 	void setFreqs(Player *p, const char* command);
 	void getStatus(Player *p);
 	void startMatch();
 	void endMatch();
 	void prepareMatch();
 	void aboutBot(Player *p);
+	void shipChange(Player *p, const char* shipStr);
 
 	Team* playerTeam(Player *p);
 	MatchPlayer* findPlayer(char* playerName);
