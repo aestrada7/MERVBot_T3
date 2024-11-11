@@ -164,7 +164,7 @@ public:
 
 	char *getShipName(int id);
 	void warpTo(Player *p, int x, int y);
-	char *getReadableElapsed();
+	char *getReadableElapsed(bool useSeconds);
 
 	void findPlayersInFreqs();
 	void parseCommand(Player *p, char* command);
