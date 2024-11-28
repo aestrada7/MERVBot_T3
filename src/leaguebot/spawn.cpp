@@ -99,8 +99,26 @@ void botInfo::gotEvent(BotEvent &event)
 							Logger::log(out);
 						}
 					}
+					if(mp->specTimer > -1)
+					{
+						mp->specTimer--;
+
+						if(mp->specTimer == 0)
+						{
+							char out[256];
+							sprintf(out, "Player %s's spec timer expired.", mp->name);
+							Logger::log(out);
+							playerSpecced(mp->player);
+						}
+					}
+					if(mp->repTimer > -1)
+					{
+						mp->repTimer--;
+					}
 				}
 			}
+
+			devalueDamage();
 		}
 		break;
 //////// Arena ////////
@@ -110,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.1.8 (2024/11/11)";
+			botVersion = "0.4.3 (2024/11/27)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -120,6 +138,7 @@ void botInfo::gotEvent(BotEvent &event)
 			Logger::log(logVersion);
 
 			sendPublic("?grplogin sysop <PWD>"); // this should come from an .ini file, but for now we'll do it here
+			sendPrivate(me, "!ownbot on");
 
 			Team teamA;
 			teamA.freq = 0;
@@ -248,6 +267,11 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 			weaponInfo wi;
 			wi.n = *(Uint16*)&event.p[1];
+
+			if(wi.type == PROJ_Repel)
+			{
+				checkForcedRepel(p);
+			}
 		}
 		break;
 	case EVENT_WatchDamage:
@@ -258,6 +282,8 @@ void botInfo::gotEvent(BotEvent &event)
 			wi.n = *(Uint16*)&event.p[2];
 			Uint16 energy = *(Uint16*)&event.p[3];
 			Uint16 damage = *(Uint16*)&event.p[4];
+			
+			trackDamage(p, k, damage);
 		}
 		break;
 	case EVENT_PlayerDeath:
@@ -298,6 +324,8 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 			Uint16 oldteam = (Uint16)(Uint32)event.p[1];
 			Uint16 oldship = (Uint16)(Uint32)event.p[2];
+
+			setSpecTimer(p);
 		}
 		break;
 	case EVENT_PlayerTeam:
@@ -312,6 +340,7 @@ void botInfo::gotEvent(BotEvent &event)
 			Player *p = (Player*)event.p[0];
 
 			killTags(p);
+			playerSpecced(p);
 		}
 		break;
 //////// Selfish ////////
@@ -331,6 +360,11 @@ void botInfo::gotEvent(BotEvent &event)
 		break;
 	case EVENT_PositionHook:
 		{
+			/* move bot to center of map */
+			tell(makeFollowing(false));
+			tell(makeFlying(true));
+			me->move(512 * 16, 600 * 16);
+			tell(makeSendPosition(true));
 		}
 		break;
 //////// Bricks ////////
@@ -375,6 +409,10 @@ void botInfo::gotEvent(BotEvent &event)
 			{
 			case MSG_Arena:
 				{
+					char output[1024];
+					sprintf(output, "%s", msg);
+					Logger::log("Arena message received:");
+					Logger::log(output);
 				}
 				break;
 			case MSG_PublicMacro:		if (!p) break;
@@ -748,6 +786,31 @@ void botInfo::parseCommand(Player *p, char* command)
 {
 	if(*command == '.')
 	{
+		bool isMod = false;
+		bool isLimited = false;
+
+		switch (p->access)
+		{
+			case OP_Duke:
+			case OP_Baron:
+			case OP_King:
+			case OP_Emperor:
+			case OP_RockStar:
+			case OP_Q:
+			case OP_God:
+			case OP_Owner:
+			case OP_SysOp:
+			case OP_SuperModerator:
+			case OP_Moderator:
+			{
+				isMod = true;
+			}
+			case OP_Limited:
+			{
+				isLimited = true;
+			}
+		}
+
 		char cmd[200];
 		const char delim[2] = "|";
 
@@ -787,11 +850,25 @@ void botInfo::parseCommand(Player *p, char* command)
 
 			if (strcmp(commandName, ".squads") == 0)
 			{
-				setSquads(p, commandArgs);
+				if(isMod)
+				{
+					setSquads(p, commandArgs);
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod).");
+				}
 			}
 			else if (strcmp(commandName, ".freqs") == 0)
 			{
-				setFreqs(p, commandArgs);
+				if(isMod)
+				{
+					setFreqs(p, commandArgs);
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod).");
+				}
 			}
 			else if (strcmp(commandName, ".status") == 0)
 			{
@@ -799,15 +876,44 @@ void botInfo::parseCommand(Player *p, char* command)
 			}
 			else if (strcmp(commandName, ".start") == 0)
 			{
-				startMatch();
+				if(isMod || isLimited)
+				{
+					startMatch();
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod/limited).");
+				}
 			}
 			else if (strcmp(commandName, ".end") == 0)
 			{
-				gameEnd();
+				if(isMod || isLimited)
+				{
+					gameEnd();
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod/limited).");
+				}
 			}
 			else if (strcmp(commandName, ".sc") == 0)
 			{
 				shipChange(p, commandArgs);
+			}
+			else if (strcmp(commandName, ".announce") == 0)
+			{
+				if(isMod || isLimited)
+				{
+					announce();
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod/limited).");
+				}
+			}
+			else if (strcmp(commandName, ".about") == 0)
+			{
+				aboutBot(p);
 			}
 			else
 			{
@@ -832,6 +938,7 @@ void botInfo::findPlayersInFreqs()
 	while (parse)
 	{
 		Player *p = parse->item;
+		bool playerFound = false;
 
 		if(p->team == match.teams[0].freq && p->ship != SHIP_Spectator)
 		{
@@ -845,14 +952,20 @@ void botInfo::findPlayersInFreqs()
 			mp.forcedReps = 0;
 			mp.teamkills = 0;
 			mp.mvpPoints = 0;
-			mp.shipLocked = false;
+			mp.shipLocked = true;
+			mp.lagged = false;
 			mp.timer = -1;
+			mp.specTimer = -1;
+			mp.repTimer = -1;
 			mp.player = p;
 
 			match.teams[0].players.push_back(mp);
 
 			sprintf(out, "Found player %s in freq %d.", p->name, p->team);
 			Logger::log(out);
+			
+			playerFound = true;
+			sendPrivate(p, "*watchdamage 1");
 		}
 
 		if(p->team == match.teams[1].freq && p->ship != SHIP_Spectator)
@@ -867,14 +980,25 @@ void botInfo::findPlayersInFreqs()
 			mp.forcedReps = 0;
 			mp.teamkills = 0;
 			mp.mvpPoints = 0;
-			mp.shipLocked = false;
+			mp.lagged = false;
+			mp.shipLocked = true;
 			mp.timer = -1;
+			mp.specTimer = -1;
+			mp.repTimer = -1;
 			mp.player = p;
 
 			match.teams[1].players.push_back(mp);
 
 			sprintf(out, "Found player %s in freq %d.", p->name, p->team);
 			Logger::log(out);
+
+			playerFound = true;
+			sendPrivate(p, "*watchdamage 1");
+		}
+
+		if(!playerFound && p->ship != SHIP_Spectator)
+		{
+			sendPrivate(p, "*setship 9");
 		}
 
 		parse = parse->next;
@@ -919,6 +1043,7 @@ MatchPlayer* botInfo::findPlayer(char* playerName)
 	}
 
 	Logger::log("Player not found.");
+	throw std::runtime_error("Player not found.");
 	MatchPlayer* empty;
 	return empty;
 }
@@ -1030,6 +1155,9 @@ void botInfo::endMatch()
 	match.countdown = -1;
 	match.timer = -1;
 	match.elapsed = 0;
+
+	match.damageTracker.clear();
+	sendPublic("*watchdamage 0");
 }
 
 void botInfo::getStatus(Player *p)
@@ -1077,45 +1205,56 @@ void botInfo::aboutBot(Player *p)
 
 void botInfo::shipChange(Player *p, const char* shipStr)
 {
-	char out[255];
-	sprintf(out, "Player %s attempting to change ship to %s", p->name, shipStr);
-	Logger::log(out);
-
-	MatchPlayer* mp = findPlayer(p->name);
-
-	if(!mp->shipLocked)
+	if(match.locked)
 	{
-		int shipNumber = -1;
-		shipNumber = atoi(shipStr);
-		sprintf(out, "Discovered ship number: %d", shipNumber);
+		char out[255];
+		sprintf(out, "Player %s attempting to change ship to %s", p->name, shipStr);
 		Logger::log(out);
 
-		if(shipNumber >= SHIP_Warbird && shipNumber < SHIP_Spectator)
+		MatchPlayer* mp = findPlayer(p->name);
+
+		if(!mp->shipLocked)
 		{
-			sprintf(out, "*setship %d", shipNumber);
-			sendPrivate(p, out);
-
-			sprintf(out, "*arena %s changes ships", p->name);
-			sendPublic(out);
-
-			sprintf(out, "Player %s changed ship to %s", p->name, getShipName(shipNumber - 1));
+			int shipNumber = -1;
+			shipNumber = atoi(shipStr);
+			sprintf(out, "Discovered ship number: %d", shipNumber);
 			Logger::log(out);
 
-			mp->shipLocked = true;
+			if(shipNumber >= SHIP_Warbird && shipNumber < SHIP_Spectator)
+			{
+				sprintf(out, "*setship %d", shipNumber);
+				sendPrivate(p, out);
+
+				sprintf(out, "*arena %s changes ships", p->name);
+				sendPublic(out);
+
+				sprintf(out, "Player %s changed ship to %s", p->name, getShipName(shipNumber - 1));
+				Logger::log(out);
+
+				mp->shipLocked = true;
+			}
+			else
+			{
+				sprintf(out, "Invalid ship number.");
+				sendPrivate(p, out);
+				Logger::log(out);
+			}
 		}
 		else
 		{
-			sprintf(out, "Invalid ship number.");
+			sprintf(out, "Ship change failed. 10 seconds have passed.");
 			sendPrivate(p, out);
 			Logger::log(out);
 		}
 	}
-	else
-	{
-		sprintf(out, "Ship change failed. 10 seconds have passed.");
-		sendPrivate(p, out);
-		Logger::log(out);
-	}
+}
+
+void botInfo::announce()
+{
+	char out[255];
+	sprintf(out, "*zone %s vs %s will be held in ?go league", match.teams[0].squad, match.teams[1].squad);
+	Logger::log(out);
+	sendPublic(out);
 }
 
 //////// League Bot Events ////////
@@ -1132,22 +1271,56 @@ void botInfo::playerKilled(Player *p, Player *k)
 
 		Team* teamKilled = playerTeam(p);
 		Team* teamKiller = playerTeam(k);
+		MatchPlayer* killed;
+		MatchPlayer* killer;
 
-		sprintf(out, "Retrieving MatchPlayer object for %s (killed)", p->name);
-		Logger::log(out);
-		MatchPlayer* killed = findPlayer(p->name);
+		try
+		{
+			//if player not in match it kills the program
+			//throws an error on the findPlayer method to handle the use case of a player not in the match
+			sprintf(out, "Retrieving MatchPlayer object for %s (killed)", p->name);
+			Logger::log(out);
+			killed = findPlayer(p->name);
 
-		sprintf(out, "Retrieving MatchPlayer object for %s (killer)", k->name);
-		Logger::log(out);
-		MatchPlayer* killer = findPlayer(k->name);
-
-		//TODO: if player not in match it kills the program
+			sprintf(out, "Retrieving MatchPlayer object for %s (killer)", k->name);
+			Logger::log(out);
+			killer = findPlayer(k->name);
+		}
+		catch(const std::exception& e)
+		{
+			return;
+		}
 
 		char tkTxt[20] = " - Teamkill! ";
 		bool isTeamkill = false;
 
-		killed->shipLocked = false;
-		killed->timer = SHIP_CHANGE_TIME;
+		char asTxt[50];
+		bool hasAssist = false;
+
+		Assist *assist = findAssist(p, k);
+		if(assist->assistLevel != ASSIST_TYPE_NONE)
+		{
+			hasAssist = true;
+			MatchPlayer* assistPlayer = findPlayer(assist->player->name);
+			assistPlayer->assists += 1;
+
+			if(assist->assistLevel == ASSIST_TYPE_ROBBED)
+			{
+				assistPlayer->mvpPoints += 2;
+				sprintf(asTxt, " - Robbed! from %s ", assist->player->name);
+			}
+			else if(assist->assistLevel == ASSIST_TYPE_STANDARD)
+			{
+				assistPlayer->mvpPoints += 1;
+				sprintf(asTxt, " - Assist! from %s ", assist->player->name);
+			}
+			else if(assist->assistLevel == ASSIST_TYPE_LITE)
+			{
+				assistPlayer->mvpPoints += 0.5;
+				sprintf(asTxt, " - Lite Assist! from %s ", assist->player->name);
+			}
+		}
+		resetDamage(p);
 
 		if(teamKilled->freq != teamKiller->freq)
 		{
@@ -1196,28 +1369,102 @@ void botInfo::playerKilled(Player *p, Player *k)
 			{
 				killed->mvpPoints -= 2;
 			}
-			sprintf(msg, "*arena (OUT) %s kb %s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : " "), getReadableElapsed(true));
+			sprintf(msg, "*arena (OUT) %s kb %s%s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : " "), (hasAssist ? asTxt : " "), getReadableElapsed(true));
 			sendPrivate(p, "*setship 9");
+			sendPublic(msg);
+			Logger::log(msg);
+
+			sprintf(msg, "You have 10 seconds to change ship, type .sc # to do so.");
+			sendPrivate(p, msg);
+
+			killed->shipLocked = false;
+			killed->timer = SHIP_CHANGE_TIME;
 		}
 		else
 		{
-			sprintf(msg, "*arena (%d/%d) %s kb %s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), getReadableElapsed(true));
+			sprintf(msg, "*arena (%d/%d) %s kb %s%s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), (hasAssist ? asTxt : " "), getReadableElapsed(true));
+			sendPublic(msg);
+			Logger::log(msg);
 		}
 
-		sendPublic(msg);
-		Logger::log(msg);
-
-		sprintf(msg, "You have 10 seconds to change ship, type .sc # to do so.");
-		sendPrivate(p, msg);
 		announceScore();
 		checkRemainingPlayers(teamKilled);
+	}
+}
+
+void botInfo::playerSpecced(Player *p)
+{
+	if(match.locked)
+	{
+		char out[255];
+		sprintf(out, "%s Specced (since arena is locked, likely lagged out, or a mod went in)", p->name);
+		Logger::log(out);
+
+		Team* team = playerTeam(p);
+		MatchPlayer* mp;
+
+		sprintf(out, "*arena %s Lagged out!", p->name);
+		sendPublic(out);
+		
+		try
+		{
+			mp = findPlayer(p->name);
+			mp->lagouts += 1;
+			mp->lagged = true;
+
+			if(team->players.size() > 0)
+			{
+				checkRemainingPlayers(team);
+			}
+		}
+		catch(const std::exception& e)
+		{
+			Logger::log("Error caught finding player in playerSpecced");
+			return;
+		}
+	}
+}
+
+void botInfo::setSpecTimer(Player *p)
+{
+	if(match.locked)
+	{
+		MatchPlayer* mp;
+		
+		try
+		{
+			mp = findPlayer(p->name);
+			mp->specTimer = 5;
+		}
+		catch(const std::exception& e)
+		{
+			Logger::log("Error caught finding player in setSpecTimer");
+		}
+	}
+}
+
+void botInfo::setRepelTimer(Player *p)
+{
+	if(match.locked)
+	{
+		MatchPlayer* mp;
+		
+		try
+		{
+			mp = findPlayer(p->name);
+			mp->repTimer = 3;
+		}
+		catch(const std::exception& e)
+		{
+			Logger::log("Error caught finding player in setRepelTimer");
+		}
 	}
 }
 
 void botInfo::checkRemainingPlayers(Team* team)
 {
 	char out[255];
-	sprintf(out, "Player died, checking remaining players in freq %d (%s)", team->freq, team->squad);
+	sprintf(out, "Player died/lagged, checking remaining players in freq %d (%s)", team->freq, team->squad);
 	Logger::log(out);
 	bool gameFinished = true;
 
@@ -1229,15 +1476,206 @@ void botInfo::checkRemainingPlayers(Team* team)
 
 		if(p->lives > 0)
 		{
-			Logger::log("Player still alive, continuing match...");
-			gameFinished = false;
+			if(!p->lagged)
+			{
+				Logger::log("Player still alive and not spectating, continuing match...");
+				gameFinished = false;
+			}
 		}
 	}
 
 	if(gameFinished)
 	{
-		Logger::log("All players dead, ending match.");
+		Logger::log("All players dead/specced, ending match.");
 		gameEnd();
+	}
+}
+
+void botInfo::trackDamage(Player *p, Player* k, int damage)
+{
+	if(match.locked)
+	{
+		char out[255];
+
+		sprintf(out, "Tracking damage: %s <- %s %d", p->name, k->name, damage);
+		Logger::log(out);
+
+		bool trackerExists = false;
+
+		for(int i = 0; i < match.damageTracker.size(); i++)
+		{
+			if(match.damageTracker[i].player == p && match.damageTracker[i].attacker == k)
+			{
+				trackerExists = true;
+				match.damageTracker[i].damage += damage;
+
+				sprintf(out, "Adding damage to existing tracker: %s <- %s %d (total: %d)", p->name, k->name, damage, match.damageTracker[i].damage);
+				Logger::log(out);
+			}
+		}
+
+		if(!trackerExists)
+		{
+			sprintf(out, "Adding damage to new tracker: %s <- %s %d", p->name, k->name, damage);
+			Logger::log(out);
+
+			DamageTracker dt;
+			dt.player = p;
+			dt.attacker = k;
+			dt.damage = damage;
+			match.damageTracker.push_back(dt);
+		}
+	}
+}
+
+void botInfo::devalueDamage()
+{
+	const int DEVALUE_DAMAGE_PER_SECOND = 80;
+
+	if(match.locked)
+	{
+		for(int i = 0; i < match.damageTracker.size(); i++)
+		{
+			if(match.damageTracker[i].damage > 0)
+			{
+				match.damageTracker[i].damage -= DEVALUE_DAMAGE_PER_SECOND;	
+			}
+
+			if(match.damageTracker[i].damage < 0)
+			{
+				match.damageTracker[i].damage = 0;
+			}
+		}
+	}
+}
+
+void botInfo::resetDamage(Player* p)
+{
+	for(int i = 0; i < match.damageTracker.size(); i++)
+	{
+		if(match.damageTracker[i].player == p)
+		{
+			match.damageTracker[i].damage = 0;
+		}
+	}
+}
+
+Assist *botInfo::findAssist(Player* p, Player *k)
+{
+	Assist* a = new Assist();
+
+	if(match.locked)
+	{
+		char out[255];
+		sprintf(out, "Player %s died, looking for assist", p->name);
+		Logger::log(out);
+
+		const int THRESHOLD_ROBBED = 2000;
+		const int THRESHOLD_ASSIST = 1000;
+		const int THRESHOLD_LITE = 500;
+
+		int mostDamage = 0;
+
+		for(int i = 0; i < match.damageTracker.size(); i++)
+		{
+			if(match.damageTracker[i].player == p && match.damageTracker[i].attacker != k)
+			{
+				if(match.damageTracker[i].damage > mostDamage)
+				{
+					mostDamage = match.damageTracker[i].damage;
+					a->player = match.damageTracker[i].attacker;
+				}
+			}
+		}
+
+		if(mostDamage > 0)
+		{
+			sprintf(out, "Most damage (%d) delivered to %s by %s", mostDamage, p->name, a->player->name);
+			Logger::log(out);
+		}
+		else
+		{
+			sprintf(out, "No assist.");
+			Logger::log(out);
+		}
+
+		if(mostDamage > THRESHOLD_ROBBED)
+		{
+			a->assistLevel = ASSIST_TYPE_ROBBED;
+		}
+		else if(mostDamage > THRESHOLD_ASSIST)
+		{
+			a->assistLevel = ASSIST_TYPE_STANDARD;
+		}
+		else if(mostDamage > THRESHOLD_LITE)
+		{
+			a->assistLevel = ASSIST_TYPE_LITE;
+		}
+		else
+		{
+			a->assistLevel = ASSIST_TYPE_NONE;
+		}
+	}
+
+	return a;
+}
+
+void botInfo::checkForcedRepel(Player* p)
+{
+	if(match.locked)
+	{
+		/* Ensure this only gets fired once */
+		MatchPlayer* mpt;
+		mpt = findPlayer(p->name);
+		if(mpt->repTimer != -1)
+		{
+			return;
+		}
+
+		setRepelTimer(p);
+		/* Continue code execution as normal */
+
+		char out[255];
+		sprintf(out, "Repel triggered by %s, checking for forced repel...", p->name);
+		Logger::log(out);
+
+		const int THRESHOLD_FORCED_REPEL = 1000;
+		int mostDamage = 0;
+		char attackerName[50];
+
+		for(int i = 0; i < match.damageTracker.size(); i++)
+		{
+			if(match.damageTracker[i].player == p)
+			{
+				if(match.damageTracker[i].damage > mostDamage)
+				{
+					mostDamage = match.damageTracker[i].damage;
+					Player *k = match.damageTracker[i].attacker;
+
+					sprintf(attackerName, "%s", k->name);
+				}
+			}
+		}
+
+		sprintf(out, "Most damage (%d) delivered to %s by %s", mostDamage, p->name, attackerName);
+		Logger::log(out);
+
+		if(strlen(attackerName) > 0)
+		{
+			if(mostDamage > THRESHOLD_FORCED_REPEL)
+			{
+				sprintf(out, "Forcing repel for %s", attackerName);
+				Logger::log(out);
+				MatchPlayer* mp = findPlayer(attackerName);
+				mp->forcedReps += 1;
+				mp->mvpPoints += 0.25;
+			}
+		}
+		else
+		{
+			sprintf(out, "No one has damaged %s recently", p->name);
+			Logger::log(out);
+		}
 	}
 }
 
@@ -1309,11 +1747,11 @@ void botInfo::gameEnd()
 	
 	if(isTie)
 	{
-		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
+		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %s minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
 	}
 	else
 	{
-		sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %d minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
+		sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %s minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
 	}
 	sendPublic(out);
 	Logger::log(out);

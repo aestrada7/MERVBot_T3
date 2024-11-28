@@ -34,15 +34,18 @@ void botInfo::gotHelp(Player *p, Command *c)
 			break;
 		case OP_Moderator:
 			{	// Moderator-level commands
-//				sendPrivate(p, "Ext: ");
+				sendPrivate(p, "!squads !freqs !status");
 			}
 			break;
 		case OP_Limited:
 			{	// Limited-level commands
+				sendPrivate(p, "!start !end !announce");
 			}
 		case OP_Player:
 			{	// Player-level commands
-				sendPrivate(p, "!about (query me about my function)");
+				sendPrivate(p, "!sc !about !version");
+				sendPrivate(p, "for detailed help, type ::!help <command> (e.g. ::!help about)");
+				sendPrivate(p, "most commands can be typed in the public chat with a . in front (e.g. '.about')");
 			}
 		}
 
@@ -95,7 +98,61 @@ void botInfo::gotHelp(Player *p, Command *c)
 		{	// Player-level commands
 			if (c->checkParam("about"))
 			{
-				sendPrivate(p, "!about (query me about my function)");
+				sendPrivate(p, "Displays information about the bot.");
+			}
+
+			if (c->checkParam("version"))
+			{
+				sendPrivate(p, "Displays the version of the bot.");
+			}
+
+			if (c->checkParam("sc"))
+			{
+				sendPrivate(p, "Performs a ship change after being killed, usage: !sc #.");
+			}
+
+			if (c->checkParam("own"))
+			{
+				sendPrivate(p, "Provides limited ownership of the bot, allows the owner to start and end matches.");
+			}
+
+			if (c->checkParam("give"))
+			{
+				sendPrivate(p, "Surrenders bot ownership.");
+			}
+
+			if (c->checkParam("start"))
+			{
+				sendPrivate(p, "Starts a match.");
+			}
+
+			if (c->checkParam("end"))
+			{
+				sendPrivate(p, "Ends a match.");
+			}
+
+			if (c->checkParam("announce"))
+			{
+				sendPrivate(p, "Announces a match zone wide.");
+			}
+
+			if (c->checkParam("freqs"))
+			{
+				sendPrivate(p, "Sets frequencies to the provided numbers.");
+				sendPrivate(p, "Always use the format below, otherwise it will not work.");
+				sendPrivate(p, "Usage: !freqs -a=<FREQ_A> -b=<FREQ_B>");
+			}
+
+			if (c->checkParam("squads"))
+			{
+				sendPrivate(p, "Sets the bot's squads to the provided squad names.");
+				sendPrivate(p, "Always use the format below, otherwise it will not work.");
+				sendPrivate(p, "Usage: !squads -a=<SQUAD_A> -b=<SQUAD_B>");
+			}
+
+			if (c->checkParam("status"))
+			{
+				sendPrivate(p, "Shows the match status.");
 			}
 		}
 	}
@@ -123,57 +180,53 @@ void botInfo::gotCommand(Player *p, Command *c)
 		}
 	case OP_SuperModerator:
 		{	// SuperModerator-level commands
-			if (c->check("version"))
-			{
-				sendPrivate(p, "[name:default.dll] [maker:cat02e@fsu.edu] [build:8]");
-			}
 		}
 	case OP_Moderator:
 		{	// Moderator-level commands
+
+			if (c->checkParam("squads"))
+			{
+				setSquads(p, c->final);
+			}
+
+			if (c->checkParam("freqs"))
+			{
+				setFreqs(p, c->final);
+			}
+
+			if (c->checkParam("status"))
+			{
+				getStatus(p);
+			}
 		}
 	case OP_Limited:
 		{	// Limited-level commands
+			if (c->check("start"))
+			{
+				startMatch();
+			}
+
+			if(c->check("end"))
+			{
+				gameEnd();
+			}
+
+			if(c->check("announce"))
+			{
+				announce();
+			}
 		}
 	case OP_Player:
 		{	// Player-level commands
 			if (c->check("about") || c->check("version"))
 			{
-				printf("[League] Sending !about or !version info...\n");
-				sendPrivate(p, "League Bot by VanHelsing. Version: 0.0.1 (2024/11/05)");
-				sendPrivate(p, "[name: leaguebot.dll] [vanhelsing44@gmail.com]");
+				aboutBot(p);
 			}
-			/*
-			if (c->check("start"))
+
+			if (c->check("sc"))
 			{
-				start();
+				shipChange(p, c->final);
 			}
-
-			if (c->check("status"))
-			{
-				sendStatus(p);
-			}
-
-			if (c->check("squads"))
-			{
-				char squadA[50], squadB[50];
-				sscanf(c->final, "-a=%s -b=%s", squadA, squadB);
-
-				setSquadNames(squadA, squadB);
-			}
-
-			if (c->check("freqs")
-			{
-				int teamA, teamB;
-				sscanf(c->final, "-a=%d -b=%d", &teamA, &teamB);
-
-				setFreqs(teamA, teamB);
-			}
-
-			if (c->check("teamsize"))
-			{
-				setTeamsize(atoi(c->final));
-			}
-			*/
 		}
 	}
 }

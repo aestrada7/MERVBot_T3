@@ -20,6 +20,28 @@ struct PlayerTag
 
 #define MAX_OBJECTS 20
 
+enum AssistType
+{
+	ASSIST_TYPE_NONE,
+	ASSIST_TYPE_LITE,
+	ASSIST_TYPE_STANDARD,
+	ASSIST_TYPE_ROBBED
+};
+
+struct Assist
+{
+	Player *player;
+	AssistType assistLevel;
+};
+
+class DamageTracker
+{
+	public:
+		Player *player;
+		Player *attacker;
+		int damage;
+};
+
 class MatchPlayer
 {
 	public:
@@ -33,7 +55,10 @@ class MatchPlayer
 		int teamkills;
 		float mvpPoints;
 		bool shipLocked;
+		bool lagged;
 		int timer;
+		int specTimer;
+		int repTimer;
 		Player *player;
 };
 
@@ -63,6 +88,7 @@ class Match
 		int timer;
 		int elapsed;
 		Team teams[2];
+		std::vector<DamageTracker> damageTracker;
 };
 
 class Logger
@@ -176,17 +202,26 @@ public:
 	void prepareMatch();
 	void aboutBot(Player *p);
 	void shipChange(Player *p, const char* shipStr);
+	void announce();
 
 	Team* playerTeam(Player *p);
 	MatchPlayer* findPlayer(char* playerName);
-	MatchPlayer* findMatchPlayer(char* playerName);
 	void announceScore();
 	void checkRemainingPlayers(Team* team);
 	void gameEnd();
 	void printScoreBoxTop(char* squadName);
 	void printPlayerData(MatchPlayer p);
 	void printTeamData(Team t);
+
 	void playerKilled(Player* p, Player* k);
+	void playerSpecced(Player* p);
+	void setSpecTimer(Player* p);
+	void setRepelTimer(Player* p);
+	void trackDamage(Player* p, Player* k, int damage);
+	void resetDamage(Player* p);
+	void devalueDamage();
+	Assist* findAssist(Player* p, Player* k);
+	void checkForcedRepel(Player* p);
 };
 
 
