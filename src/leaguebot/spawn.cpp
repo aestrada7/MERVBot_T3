@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.3 (2024/11/27)";
+			botVersion = "0.4.5 (2024/12/2)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -409,10 +409,6 @@ void botInfo::gotEvent(BotEvent &event)
 			{
 			case MSG_Arena:
 				{
-					char output[1024];
-					sprintf(output, "%s", msg);
-					Logger::log("Arena message received:");
-					Logger::log(output);
 				}
 				break;
 			case MSG_PublicMacro:		if (!p) break;
@@ -1373,18 +1369,18 @@ void botInfo::playerKilled(Player *p, Player *k)
 			sendPrivate(p, "*setship 9");
 			sendPublic(msg);
 			Logger::log(msg);
-
-			sprintf(msg, "You have 10 seconds to change ship, type .sc # to do so.");
-			sendPrivate(p, msg);
-
-			killed->shipLocked = false;
-			killed->timer = SHIP_CHANGE_TIME;
 		}
 		else
 		{
 			sprintf(msg, "*arena (%d/%d) %s kb %s%s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), (hasAssist ? asTxt : " "), getReadableElapsed(true));
 			sendPublic(msg);
 			Logger::log(msg);
+
+			sprintf(msg, "You have 10 seconds to change ship, type .sc # to do so.");
+			sendPrivate(p, msg);
+
+			killed->shipLocked = false;
+			killed->timer = SHIP_CHANGE_TIME;
 		}
 
 		announceScore();
@@ -1871,3 +1867,4 @@ void Logger::log(const char *msg)
 }
 
 //todo: implement lagout functionality and give 1 minute to return
+//todo: could we announce to a discord bot?
