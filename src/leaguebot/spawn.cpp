@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.5 (2024/12/2)";
+			botVersion = "0.4.8 (2024/12/19)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -142,12 +142,12 @@ void botInfo::gotEvent(BotEvent &event)
 
 			Team teamA;
 			teamA.freq = 0;
-			teamA.squad = "Squad A";
+			teamA.squad = "North";
 			teamA.score = 0;
 
 			Team teamB;
 			teamB.freq = 1;
-			teamB.squad = "Squad B";
+			teamB.squad = "South";
 			teamB.score = 0;
 
 			match.sideAX = 250;
@@ -741,6 +741,7 @@ void botInfo::warpTo(Player *p, int x, int y)
 	char out[255];
 	sprintf(out, "*warpto %d %d", x, y);
 	sendPrivate(p, out);
+	sendPrivate(p, "*shipreset");
 }
 
 char *botInfo::getShipName(int id)
@@ -939,7 +940,9 @@ void botInfo::findPlayersInFreqs()
 		if(p->team == match.teams[0].freq && p->ship != SHIP_Spectator)
 		{
 			MatchPlayer mp;
-			mp.name = p->name;
+			char pname[50];
+			strcpy(pname, p->name);
+			mp.name = pname;
 			mp.lives = 3;
 			mp.kills = 0;
 			mp.assists = 0;
@@ -967,7 +970,9 @@ void botInfo::findPlayersInFreqs()
 		if(p->team == match.teams[1].freq && p->ship != SHIP_Spectator)
 		{
 			MatchPlayer mp;
-			mp.name = p->name;
+			char pname[50];
+			strcpy(pname, p->name);
+			mp.name = pname;
 			mp.lives = 3;
 			mp.kills = 0;
 			mp.assists = 0;
@@ -976,8 +981,8 @@ void botInfo::findPlayersInFreqs()
 			mp.forcedReps = 0;
 			mp.teamkills = 0;
 			mp.mvpPoints = 0;
-			mp.lagged = false;
 			mp.shipLocked = true;
+			mp.lagged = false;
 			mp.timer = -1;
 			mp.specTimer = -1;
 			mp.repTimer = -1;
@@ -1297,6 +1302,9 @@ void botInfo::playerKilled(Player *p, Player *k)
 		if(assist->assistLevel != ASSIST_TYPE_NONE)
 		{
 			hasAssist = true;
+			char outx[255];
+			sprintf(outx, "Attempting to assign an assist to %s", assist->player->name);
+			Logger::log(outx);
 			MatchPlayer* assistPlayer = findPlayer(assist->player->name);
 			assistPlayer->assists += 1;
 
@@ -1392,21 +1400,26 @@ void botInfo::playerSpecced(Player *p)
 {
 	if(match.locked)
 	{
-		char out[255];
-		sprintf(out, "%s Specced (since arena is locked, likely lagged out, or a mod went in)", p->name);
-		Logger::log(out);
-
 		Team* team = playerTeam(p);
 		MatchPlayer* mp;
 
-		sprintf(out, "*arena %s Lagged out!", p->name);
-		sendPublic(out);
-		
 		try
 		{
+			char out[255];
+			sprintf(out, "%s Specced (since arena is locked, likely lagged out, or was on last life)", p->name);
+			Logger::log(out);
+
 			mp = findPlayer(p->name);
-			mp->lagouts += 1;
-			mp->lagged = true;
+
+			if(mp->lives > 0)
+			{
+				sprintf(out, "*arena %s Lagged out!", p->name);
+				sendPublic(out);
+				Logger::log(out);
+
+				mp->lagouts += 1;
+				mp->lagged = true;
+			}
 
 			if(team->players.size() > 0)
 			{
@@ -1425,10 +1438,14 @@ void botInfo::setSpecTimer(Player *p)
 {
 	if(match.locked)
 	{
+		char out[255];
 		MatchPlayer* mp;
 		
 		try
 		{
+			sprintf(out, "Attempting to set spec timer for %s", p->name);
+			Logger::log(out);
+
 			mp = findPlayer(p->name);
 			mp->specTimer = 5;
 		}
@@ -1443,10 +1460,14 @@ void botInfo::setRepelTimer(Player *p)
 {
 	if(match.locked)
 	{
+		char out[255];
 		MatchPlayer* mp;
 		
 		try
 		{
+			sprintf(out, "Attempting to set repel timer for %s", p->name);
+			Logger::log(out);
+
 			mp = findPlayer(p->name);
 			mp->repTimer = 3;
 		}
@@ -1460,14 +1481,14 @@ void botInfo::setRepelTimer(Player *p)
 void botInfo::checkRemainingPlayers(Team* team)
 {
 	char out[255];
-	sprintf(out, "Player died/lagged, checking remaining players in freq %d (%s)", team->freq, team->squad);
+	sprintf(out, "Checking remaining players in freq %d (%s)", team->freq, team->squad);
 	Logger::log(out);
 	bool gameFinished = true;
 
 	for(int i = 0; i < team->players.size(); i++)
 	{
 		MatchPlayer* p = &team->players[i];
-		sprintf(out, "Found player %s in freq %d with %d lives", p->name, team->freq, p->lives);
+		sprintf(out, "Found player %s in freq %d with %d lives (spec: %s)", p->name, team->freq, p->lives, p->lagged ? "true" : "false");
 		Logger::log(out);
 
 		if(p->lives > 0)
@@ -1476,6 +1497,7 @@ void botInfo::checkRemainingPlayers(Team* team)
 			{
 				Logger::log("Player still alive and not spectating, continuing match...");
 				gameFinished = false;
+				break;
 			}
 		}
 	}
@@ -1493,8 +1515,10 @@ void botInfo::trackDamage(Player *p, Player* k, int damage)
 	{
 		char out[255];
 
+		/*
 		sprintf(out, "Tracking damage: %s <- %s %d", p->name, k->name, damage);
 		Logger::log(out);
+		*/
 
 		bool trackerExists = false;
 
@@ -1504,16 +1528,20 @@ void botInfo::trackDamage(Player *p, Player* k, int damage)
 			{
 				trackerExists = true;
 				match.damageTracker[i].damage += damage;
-
+				
+				/*
 				sprintf(out, "Adding damage to existing tracker: %s <- %s %d (total: %d)", p->name, k->name, damage, match.damageTracker[i].damage);
 				Logger::log(out);
+				*/
 			}
 		}
 
 		if(!trackerExists)
 		{
+			/*
 			sprintf(out, "Adding damage to new tracker: %s <- %s %d", p->name, k->name, damage);
 			Logger::log(out);
+			*/
 
 			DamageTracker dt;
 			dt.player = p;
@@ -1620,6 +1648,10 @@ void botInfo::checkForcedRepel(Player* p)
 {
 	if(match.locked)
 	{
+		char out[255];
+		sprintf(out, "Repel triggered by %s, checking for forced repel...", p->name);
+		Logger::log(out);
+
 		/* Ensure this only gets fired once */
 		MatchPlayer* mpt;
 		mpt = findPlayer(p->name);
@@ -1630,10 +1662,6 @@ void botInfo::checkForcedRepel(Player* p)
 
 		setRepelTimer(p);
 		/* Continue code execution as normal */
-
-		char out[255];
-		sprintf(out, "Repel triggered by %s, checking for forced repel...", p->name);
-		Logger::log(out);
 
 		const int THRESHOLD_FORCED_REPEL = 1000;
 		int mostDamage = 0;
@@ -1868,3 +1896,4 @@ void Logger::log(const char *msg)
 
 //todo: implement lagout functionality and give 1 minute to return
 //todo: could we announce to a discord bot?
+//todo: ensure items (portal, bricks) are cleared when starting/ending a match - looks like only way to do this is to force spec, then set ship before warping
