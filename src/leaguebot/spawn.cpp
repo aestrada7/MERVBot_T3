@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.8 (2024/12/19)";
+			botVersion = "0.4.13 (2024/12/20)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -742,6 +742,7 @@ void botInfo::warpTo(Player *p, int x, int y)
 	sprintf(out, "*warpto %d %d", x, y);
 	sendPrivate(p, out);
 	sendPrivate(p, "*shipreset");
+	sendPrivate(p, "?scorereset");
 }
 
 char *botInfo::getShipName(int id)
@@ -940,9 +941,7 @@ void botInfo::findPlayersInFreqs()
 		if(p->team == match.teams[0].freq && p->ship != SHIP_Spectator)
 		{
 			MatchPlayer mp;
-			char pname[50];
-			strcpy(pname, p->name);
-			mp.name = pname;
+			mp.name = strdup(p->name);
 			mp.lives = 3;
 			mp.kills = 0;
 			mp.assists = 0;
@@ -970,9 +969,7 @@ void botInfo::findPlayersInFreqs()
 		if(p->team == match.teams[1].freq && p->ship != SHIP_Spectator)
 		{
 			MatchPlayer mp;
-			char pname[50];
-			strcpy(pname, p->name);
-			mp.name = pname;
+			mp.name = strdup(p->name);
 			mp.lives = 3;
 			mp.kills = 0;
 			mp.assists = 0;
@@ -1096,17 +1093,24 @@ void botInfo::setFreqs(Player *p, const char* freqStr)
 
 void botInfo::startMatch()
 {
-	Logger::log("Start command receieved. Starting match.");
-	
-	//subgame locking
-	sendPublic("*lock");
-	//asss locking
-	sendPublic("?lockarena -n");
+	if(match.countdown == -1 && !match.locked)
+	{
+		Logger::log("Start command receieved. Starting match.");
+		
+		//subgame locking
+		sendPublic("*lock");
+		//asss locking
+		sendPublic("?lockarena -n");
 
-	sendPublic("*arena Starting in 10 seconds...");
-	findPlayersInFreqs();
+		sendPublic("*arena Starting in 10 seconds...");
+		findPlayersInFreqs();
 
-	match.countdown = 10;
+		match.countdown = 10;
+	}
+	else
+	{
+		Logger::log("Start command receieved. Ignoring, match already in progress.");
+	}
 }
 
 void botInfo::prepareMatch()
@@ -1292,7 +1296,7 @@ void botInfo::playerKilled(Player *p, Player *k)
 			return;
 		}
 
-		char tkTxt[20] = " - Teamkill! ";
+		char tkTxt[20] = " - Teamkill!";
 		bool isTeamkill = false;
 
 		char asTxt[50];
@@ -1373,14 +1377,14 @@ void botInfo::playerKilled(Player *p, Player *k)
 			{
 				killed->mvpPoints -= 2;
 			}
-			sprintf(msg, "*arena (OUT) %s kb %s%s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : " "), (hasAssist ? asTxt : " "), getReadableElapsed(true));
+			sprintf(msg, "*arena (OUT) %s kb %s%s%s- Kill time: %s", killed->name, killer->name, (isTeamkill ? tkTxt : ""), (hasAssist ? asTxt : " "), getReadableElapsed(true));
 			sendPrivate(p, "*setship 9");
 			sendPublic(msg);
 			Logger::log(msg);
 		}
 		else
 		{
-			sprintf(msg, "*arena (%d/%d) %s kb %s%s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : " "), (hasAssist ? asTxt : " "), getReadableElapsed(true));
+			sprintf(msg, "*arena (%d/%d) %s kb %s%s%s- Kill time: %s", killed->deaths, match.lives, killed->name, killer->name, (isTeamkill ? tkTxt : ""), (hasAssist ? asTxt : " "), getReadableElapsed(true));
 			sendPublic(msg);
 			Logger::log(msg);
 
@@ -1419,16 +1423,16 @@ void botInfo::playerSpecced(Player *p)
 
 				mp->lagouts += 1;
 				mp->lagged = true;
-			}
 
-			if(team->players.size() > 0)
-			{
-				checkRemainingPlayers(team);
+				if(team->players.size() > 0)
+				{
+					checkRemainingPlayers(team);
+				}
 			}
 		}
 		catch(const std::exception& e)
 		{
-			Logger::log("Error caught finding player in playerSpecced");
+			Logger::log("Error caught finding player in playerSpecced, player doesn't exist");
 			return;
 		}
 	}
@@ -1594,15 +1598,16 @@ Assist *botInfo::findAssist(Player* p, Player *k)
 		sprintf(out, "Player %s died, looking for assist", p->name);
 		Logger::log(out);
 
-		const int THRESHOLD_ROBBED = 2000;
-		const int THRESHOLD_ASSIST = 1000;
-		const int THRESHOLD_LITE = 500;
+		const int THRESHOLD_ROBBED = 1500;
+		const int THRESHOLD_ASSIST = 900;
+		const int THRESHOLD_LITE = 400;
 
 		int mostDamage = 0;
 
 		for(int i = 0; i < match.damageTracker.size(); i++)
 		{
-			if(match.damageTracker[i].player == p && match.damageTracker[i].attacker != k)
+			//ensure the killer doesn't get an assist, and ensure the killed player doesn't get an assist either for self damage
+			if(match.damageTracker[i].player == p && match.damageTracker[i].attacker != k && match.damageTracker[i].attacker != p)
 			{
 				if(match.damageTracker[i].damage > mostDamage)
 				{
@@ -1648,10 +1653,6 @@ void botInfo::checkForcedRepel(Player* p)
 {
 	if(match.locked)
 	{
-		char out[255];
-		sprintf(out, "Repel triggered by %s, checking for forced repel...", p->name);
-		Logger::log(out);
-
 		/* Ensure this only gets fired once */
 		MatchPlayer* mpt;
 		mpt = findPlayer(p->name);
@@ -1663,9 +1664,13 @@ void botInfo::checkForcedRepel(Player* p)
 		setRepelTimer(p);
 		/* Continue code execution as normal */
 
-		const int THRESHOLD_FORCED_REPEL = 1000;
+		char out[255];
+		sprintf(out, "Repel triggered by %s, checking for forced repel...", p->name);
+		Logger::log(out);
+
+		const int THRESHOLD_FORCED_REPEL = 850;
 		int mostDamage = 0;
-		char attackerName[50];
+		char attackerName[50] = "%__null__%";
 
 		for(int i = 0; i < match.damageTracker.size(); i++)
 		{
@@ -1681,11 +1686,11 @@ void botInfo::checkForcedRepel(Player* p)
 			}
 		}
 
-		sprintf(out, "Most damage (%d) delivered to %s by %s", mostDamage, p->name, attackerName);
-		Logger::log(out);
-
-		if(strlen(attackerName) > 0)
+		if(strcmp(attackerName, "%__null__%") != 0)
 		{
+			sprintf(out, "Most damage (%d) delivered to %s by %s", mostDamage, p->name, attackerName);
+			Logger::log(out);
+
 			if(mostDamage > THRESHOLD_FORCED_REPEL)
 			{
 				sprintf(out, "Forcing repel for %s", attackerName);
@@ -1897,3 +1902,4 @@ void Logger::log(const char *msg)
 //todo: implement lagout functionality and give 1 minute to return
 //todo: could we announce to a discord bot?
 //todo: ensure items (portal, bricks) are cleared when starting/ending a match - looks like only way to do this is to force spec, then set ship before warping
+//todo: some sort of stats tracking, likely using sqlite
