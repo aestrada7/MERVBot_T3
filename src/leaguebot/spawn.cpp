@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.13 (2024/12/20)";
+			botVersion = "0.4.17 (2024/12/24)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -1016,8 +1016,8 @@ Team* botInfo::playerTeam(Player *p)
 			}
 		}
 	}
-	Team t;
-	return &t;
+	Team* t = new Team;
+	return t;
 }
 
 MatchPlayer* botInfo::findPlayer(char* playerName)
@@ -1042,7 +1042,8 @@ MatchPlayer* botInfo::findPlayer(char* playerName)
 
 	Logger::log("Player not found.");
 	throw std::runtime_error("Player not found.");
-	MatchPlayer* empty;
+	MatchPlayer* empty = new MatchPlayer;
+	empty->lives = 0;
 	return empty;
 }
 
@@ -1215,41 +1216,58 @@ void botInfo::shipChange(Player *p, const char* shipStr)
 		char out[255];
 		sprintf(out, "Player %s attempting to change ship to %s", p->name, shipStr);
 		Logger::log(out);
+		MatchPlayer* mp;
 
-		MatchPlayer* mp = findPlayer(p->name);
-
-		if(!mp->shipLocked)
+		try
 		{
-			int shipNumber = -1;
-			shipNumber = atoi(shipStr);
-			sprintf(out, "Discovered ship number: %d", shipNumber);
-			Logger::log(out);
+			mp = findPlayer(p->name);
+		}
+		catch(const std::exception& e)
+		{
+			Logger::log(e.what());
+			sendPrivate(p, "Can't ship change if you're not in a match.");
+			return;
+		}
 
-			if(shipNumber >= SHIP_Warbird && shipNumber < SHIP_Spectator)
+		if(mp->lives > 0)
+		{
+			if(!mp->shipLocked)
 			{
-				sprintf(out, "*setship %d", shipNumber);
-				sendPrivate(p, out);
-
-				sprintf(out, "*arena %s changes ships", p->name);
-				sendPublic(out);
-
-				sprintf(out, "Player %s changed ship to %s", p->name, getShipName(shipNumber - 1));
+				int shipNumber = -1;
+				shipNumber = atoi(shipStr);
+				sprintf(out, "Discovered ship number: %d", shipNumber);
 				Logger::log(out);
 
-				mp->shipLocked = true;
+				if(shipNumber >= SHIP_Warbird && shipNumber < SHIP_Spectator)
+				{
+					sprintf(out, "*setship %d", shipNumber);
+					sendPrivate(p, out);
+
+					sprintf(out, "*arena %s changes ships", p->name);
+					sendPublic(out);
+
+					sprintf(out, "Player %s changed ship to %s", p->name, getShipName(shipNumber - 1));
+					Logger::log(out);
+
+					mp->shipLocked = true;
+				}
+				else
+				{
+					sprintf(out, "Invalid ship number.");
+					sendPrivate(p, out);
+					Logger::log(out);
+				}
 			}
 			else
 			{
-				sprintf(out, "Invalid ship number.");
+				sprintf(out, "Ship change failed. 10 seconds have passed.");
 				sendPrivate(p, out);
 				Logger::log(out);
 			}
 		}
 		else
 		{
-			sprintf(out, "Ship change failed. 10 seconds have passed.");
-			sendPrivate(p, out);
-			Logger::log(out);
+			sendPrivate(p, "Can't ship change if you're not in a match.");
 		}
 	}
 }
@@ -1676,7 +1694,7 @@ void botInfo::checkForcedRepel(Player* p)
 		{
 			if(match.damageTracker[i].player == p)
 			{
-				if(match.damageTracker[i].damage > mostDamage)
+				if(match.damageTracker[i].damage > mostDamage && match.damageTracker[i].attacker != p)
 				{
 					mostDamage = match.damageTracker[i].damage;
 					Player *k = match.damageTracker[i].attacker;
@@ -1710,93 +1728,96 @@ void botInfo::checkForcedRepel(Player* p)
 
 void botInfo::gameEnd()
 {
-	Logger::log("Ending game...");
-	char* winner;
-	char* loser;
-	int winnerScore;
-	int loserScore;
-	char out[255];
-	char* mvp;
-	float mvpPoints = -5;
-	int mvpK = 0;
-	int mvpD = 0;
-	bool isTie = false;
-	bool mvpFound = false;
+	if(match.locked)
+	{
+		Logger::log("Ending game...");
+		char* winner;
+		char* loser;
+		int winnerScore;
+		int loserScore;
+		char out[255];
+		char* mvp;
+		float mvpPoints = -5;
+		int mvpK = 0;
+		int mvpD = 0;
+		bool isTie = false;
+		bool mvpFound = false;
 
-	if(match.teams[0].score > match.teams[1].score)
-	{
-		winner = match.teams[0].squad;
-		loser = match.teams[1].squad;
-		winnerScore = match.teams[0].score;
-		loserScore = match.teams[1].score;
-	}
-	else if(match.teams[1].score > match.teams[0].score)
-	{
-		winner = match.teams[1].squad;
-		loser = match.teams[0].squad;
-		winnerScore = match.teams[1].score;
-		loserScore = match.teams[0].score;
-	}
-	else
-	{
-		isTie = true;
-		winner = match.teams[0].squad;
-		loser = match.teams[1].squad;
-		winnerScore = match.teams[0].score;
-		loserScore = match.teams[1].score;
-	}
-
-	for(int i = 0; i < 2; i++)
-	{
-		printScoreBoxTop(match.teams[i].squad);
-		for(int j = 0; j < match.teams[i].players.size(); j++)
+		if(match.teams[0].score > match.teams[1].score)
 		{
-			MatchPlayer p = match.teams[i].players[j];
-			printPlayerData(p);
-			if(p.mvpPoints > mvpPoints)
-			{
-				mvpPoints = p.mvpPoints;
-				mvp = p.name;
-				mvpK = p.kills;
-				mvpD = p.deaths;
-				mvpFound = true;
-			}
+			winner = match.teams[0].squad;
+			loser = match.teams[1].squad;
+			winnerScore = match.teams[0].score;
+			loserScore = match.teams[1].score;
 		}
-		printTeamData(match.teams[i]);
-	}
+		else if(match.teams[1].score > match.teams[0].score)
+		{
+			winner = match.teams[1].squad;
+			loser = match.teams[0].squad;
+			winnerScore = match.teams[1].score;
+			loserScore = match.teams[0].score;
+		}
+		else
+		{
+			isTie = true;
+			winner = match.teams[0].squad;
+			loser = match.teams[1].squad;
+			winnerScore = match.teams[0].score;
+			loserScore = match.teams[1].score;
+		}
 
-	sendPublic("*arena Game Over!");
+		for(int i = 0; i < 2; i++)
+		{
+			printScoreBoxTop(match.teams[i].squad);
+			for(int j = 0; j < match.teams[i].players.size(); j++)
+			{
+				MatchPlayer p = match.teams[i].players[j];
+				printPlayerData(p);
+				if(p.mvpPoints > mvpPoints)
+				{
+					mvpPoints = p.mvpPoints;
+					mvp = p.name;
+					mvpK = p.kills;
+					mvpD = p.deaths;
+					mvpFound = true;
+				}
+			}
+			printTeamData(match.teams[i]);
+		}
 
-	//subgame unlocking
-	sendPublic("*lock");
-	//asss unlocking
-	sendPublic("?unlockarena -n");
+		sendPublic("*arena Game Over!");
 
-	match.locked = false;
-	
-	if(isTie)
-	{
-		sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %s minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
-	}
-	else
-	{
-		sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %s minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
-	}
-	sendPublic(out);
-	Logger::log(out);
+		//subgame unlocking
+		sendPublic("*lock");
+		//asss unlocking
+		sendPublic("?unlockarena -n");
 
-	if(mvpFound)
-	{
-		sprintf(out, "*arena MVP: %s (%.2f pts, %d-%d)", mvp, mvpPoints, mvpK, mvpD);
-		Logger::log(out);
+		match.locked = false;
+		
+		if(isTie)
+		{
+			sprintf(out, "*arena Tie between %s and %s Final Score: %d - %d in %s minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
+		}
+		else
+		{
+			sprintf(out, "*arena %s defeats %s Final Score: %d - %d in %s minutes.", winner, loser, winnerScore, loserScore, getReadableElapsed(false));
+		}
 		sendPublic(out);
-	}
-	else
-	{
-		Logger::log("No MVP.");
-	}
+		Logger::log(out);
 
-	endMatch();
+		if(mvpFound)
+		{
+			sprintf(out, "*arena MVP: %s (%.2f pts, %d-%d)", mvp, mvpPoints, mvpK, mvpD);
+			Logger::log(out);
+			sendPublic(out);
+		}
+		else
+		{
+			Logger::log("No MVP.");
+		}
+
+		endMatch();
+	}
 }
 
 void botInfo::printScoreBoxTop(char* squadName)
