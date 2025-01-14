@@ -39,7 +39,7 @@ void botInfo::gotHelp(Player *p, Command *c)
 			break;
 		case OP_Limited:
 			{	// Limited-level commands
-				sendPrivate(p, "!start !end !announce");
+				sendPrivate(p, "!start !end !announce !lives");
 			}
 		case OP_Player:
 			{	// Player-level commands
@@ -154,6 +154,11 @@ void botInfo::gotHelp(Player *p, Command *c)
 			{
 				sendPrivate(p, "Shows the match status.");
 			}
+
+			if (c->checkParam("lives"))
+			{
+				sendPrivate(p, "Sets the number of lives (between 1 and 5).");
+			}
 		}
 	}
 }
@@ -214,6 +219,11 @@ void botInfo::gotCommand(Player *p, Command *c)
 			if(c->check("announce"))
 			{
 				announce();
+			}
+
+			if(c->check("lives"))
+			{
+				setLives(p, c->final);
 			}
 		}
 	case OP_Player:

@@ -202,6 +202,7 @@ public:
 	void prepareMatch();
 	void aboutBot(Player *p);
 	void shipChange(Player *p, const char* shipStr);
+	void setLives(Player *p, const char* livesStr);
 	void announce();
 
 	Team* playerTeam(Player *p);

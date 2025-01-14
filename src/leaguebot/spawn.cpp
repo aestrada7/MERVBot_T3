@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.17 (2024/12/24)";
+			botVersion = "0.4.21 (2025/1/13)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 
@@ -913,6 +913,22 @@ void botInfo::parseCommand(Player *p, char* command)
 			{
 				aboutBot(p);
 			}
+			else if (strcmp(commandName, ".own") == 0)
+			{
+				//todo: experimental
+				gotCommand(p, new Command("own"));
+			}
+			else if (strcmp(commandName, ".lives") == 0)
+			{
+				if(isMod || isLimited)
+				{
+					setLives(p, commandArgs);
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod/limited).");
+				}
+			}
 			else
 			{
 				char out[255];
@@ -942,7 +958,7 @@ void botInfo::findPlayersInFreqs()
 		{
 			MatchPlayer mp;
 			mp.name = strdup(p->name);
-			mp.lives = 3;
+			mp.lives = match.lives;
 			mp.kills = 0;
 			mp.assists = 0;
 			mp.deaths = 0;
@@ -970,7 +986,7 @@ void botInfo::findPlayersInFreqs()
 		{
 			MatchPlayer mp;
 			mp.name = strdup(p->name);
-			mp.lives = 3;
+			mp.lives = match.lives;
 			mp.kills = 0;
 			mp.assists = 0;
 			mp.deaths = 0;
@@ -1022,6 +1038,16 @@ Team* botInfo::playerTeam(Player *p)
 
 MatchPlayer* botInfo::findPlayer(char* playerName)
 {
+	MatchPlayer* empty = new MatchPlayer;
+	empty->lives = 0;
+
+	if(playerName == NULL)
+	{
+		Logger::log("Player name is null, must've left the arena.");
+		throw std::runtime_error("Player name is null.");
+		return empty;
+	}
+
 	char out[255];
 	sprintf(out, "Looking for player %s", playerName);
 	Logger::log(out);
@@ -1042,8 +1068,6 @@ MatchPlayer* botInfo::findPlayer(char* playerName)
 
 	Logger::log("Player not found.");
 	throw std::runtime_error("Player not found.");
-	MatchPlayer* empty = new MatchPlayer;
-	empty->lives = 0;
 	return empty;
 }
 
@@ -1269,6 +1293,44 @@ void botInfo::shipChange(Player *p, const char* shipStr)
 		{
 			sendPrivate(p, "Can't ship change if you're not in a match.");
 		}
+	}
+}
+
+void botInfo::setLives(Player *p, const char* livesStr)
+{
+	char msg[100];
+	int lives = 0;
+
+	if(!match.locked)
+	{
+		try
+		{
+			lives = atoi(livesStr);
+		}
+		catch(const std::exception& e)
+		{
+			Logger::log(e.what());
+			sendPrivate(p, "Invalid lives value.");
+			return;
+		}
+
+		if(lives > 0 && lives <= 5)
+		{
+			match.lives = lives;
+			sprintf(msg, "Lives set to %d", lives);
+			sendPrivate(p, msg);
+			Logger::log(msg);
+		}
+		else
+		{
+			sprintf(msg, "Lives should be between 1 and 5");
+			sendPrivate(p, msg);
+			Logger::log(msg);
+		}
+	}
+	else
+	{
+		sendPrivate(p, "Can't set lives if a match is in progress.");
 	}
 }
 
@@ -1924,3 +1986,4 @@ void Logger::log(const char *msg)
 //todo: could we announce to a discord bot?
 //todo: ensure items (portal, bricks) are cleared when starting/ending a match - looks like only way to do this is to force spec, then set ship before warping
 //todo: some sort of stats tracking, likely using sqlite
+//todo: overtime rules, when the duration is set should start OT rules (duration is set at 20, a .duration command would be needed to override that)
