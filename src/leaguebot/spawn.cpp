@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.23 (2025/1/16)";
+			botVersion = "0.4.24 (2025/1/16)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 			botSettings = "leaguebot.ini";
@@ -138,8 +138,9 @@ void botInfo::gotEvent(BotEvent &event)
 			Logger::log("Bot connected to arena.");
 			Logger::log(logVersion);
 
-			char* sysopPassword = getSetting("SysopPassword");
+			char sysopPassword[30];
 			char sysopLogin[50];
+			strcpy(sysopPassword, getSetting("SysopPassword"));
 			sprintf(sysopLogin, "?grplogin sysop %s", sysopPassword);
 			sendPublic(sysopLogin);
 			sendPrivate(me, "!ownbot on");
