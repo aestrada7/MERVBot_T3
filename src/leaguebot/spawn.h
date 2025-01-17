@@ -129,6 +129,7 @@ class botInfo
 	char *botVersion;
 	char *botName;
 	char *botDLL;
+	char *botSettings;
 
 public:
 	botInfo(CALL_HANDLE given)
@@ -223,6 +224,8 @@ public:
 	void devalueDamage();
 	Assist* findAssist(Player* p, Player* k);
 	void checkForcedRepel(Player* p);
+
+	char* getSetting(char* setting);
 };
 
 

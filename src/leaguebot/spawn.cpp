@@ -128,16 +128,20 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.21 (2025/1/13)";
+			botVersion = "0.4.23 (2025/1/16)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
+			botSettings = "leaguebot.ini";
 
 			char logVersion[256];
 			sprintf(logVersion, "%s by VanHelsing. Version: %s\n[name: %s] [vanhelsing44@gmail.com]", botName, botVersion, botDLL);
 			Logger::log("Bot connected to arena.");
 			Logger::log(logVersion);
 
-			sendPublic("?grplogin sysop <PWD>"); // this should come from an .ini file, but for now we'll do it here
+			char* sysopPassword = getSetting("SysopPassword");
+			char sysopLogin[50];
+			sprintf(sysopLogin, "?grplogin sysop %s", sysopPassword);
+			sendPublic(sysopLogin);
 			sendPrivate(me, "!ownbot on");
 
 			Team teamA;
@@ -1962,6 +1966,42 @@ void botInfo::announceScore()
 	sprintf(msg, "*arena Score %d - %d %s", leadingScore, trailingScore, leadingTeam);
 	Logger::log(msg);
 	sendPublic(msg);
+}
+
+///// I/O /////
+
+char* botInfo::getSetting(char* setting)
+{
+	char msg[255];
+	char* ret = NULL;
+	std::ifstream file(botSettings);
+
+	if(!file.good())
+	{
+		sprintf(msg, "Error opening file %s", botSettings);
+		sendPublic(msg);
+		Logger::log(msg);
+		file.close();
+		ret = "";
+	}
+	else
+	{
+		char line[256];
+		ret = "";
+
+		while(file.getline(line, 256))
+		{
+			if(CMPSTART(setting, line))
+			{
+				ret = &line[strlen(setting) + 1];
+				break;
+			}
+		}
+		file.close();
+	}
+	sprintf(msg, "Retrieved %s: %s", setting, ret);
+	Logger::log(msg);
+	return ret;
 }
 
 ///// Logging /////
