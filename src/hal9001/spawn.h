@@ -9,7 +9,6 @@
 #include "..\dllcore.h"
 
 #include "..\clientprot.h"
-#include <vector>
 
 struct PlayerTag
 {
@@ -19,78 +18,6 @@ struct PlayerTag
 };
 
 #define MAX_OBJECTS 20
-
-enum AssistType
-{
-	ASSIST_TYPE_NONE,
-	ASSIST_TYPE_LITE,
-	ASSIST_TYPE_STANDARD,
-	ASSIST_TYPE_ROBBED
-};
-
-struct Assist
-{
-	Player *player;
-	AssistType assistLevel;
-};
-
-class DamageTracker
-{
-	public:
-		Player *player;
-		Player *attacker;
-		int damage;
-};
-
-class MatchPlayer
-{
-	public:
-		char *name;
-		int lives;
-		int kills;
-		int assists;
-		int deaths;
-		int lagouts;
-		int forcedReps;
-		int teamkills;
-		float mvpPoints;
-		bool shipLocked;
-		bool lagged;
-		int timer;
-		int specTimer;
-		int repTimer;
-		Player *player;
-};
-
-class Team
-{
-	public:
-		int freq;
-		char *squad;
-		int score;
-		std::vector<MatchPlayer> players;
-};
-
-class Match
-{
-	public:
-		int sideAX;
-		int sideAY;
-		int sideBX;
-		int sideBY;
-		int numPlayers;
-		int lives;
-		int duration;
-		bool lagEnforcing;
-		char *gameType;
-		bool locked;
-		int countdown;
-		int timer;
-		int elapsed;
-		int id;
-		Team teams[2];
-		std::vector<DamageTracker> damageTracker;
-};
 
 class Logger
 {
@@ -126,7 +53,6 @@ class botInfo
 	int countdown[4];
 
 	// Put bot data here
-	Match match;
 	char *botVersion;
 	char *botName;
 	char *botDLL;
@@ -151,7 +77,6 @@ public:
 		object_dest = NULL;
 
 		// Put initial values here
-		Match match;
 	}
 
 	void clear_objects();
@@ -190,42 +115,8 @@ public:
 	void gotRemoteHelp(char *p, Command *c, Operator_Level l);
 	void gotRemote(char *p, Command *c, Operator_Level l);
 
-	char *getShipName(int id);
-	void warpTo(Player *p, int x, int y);
-	char *getReadableElapsed(bool useSeconds);
-
-	void findPlayersInFreqs();
-	void parseCommand(Player *p, char* command);
-	void setSquads(Player *p, const char* command);
-	void setFreqs(Player *p, const char* command);
-	void setMode(Player *p, const char* command);
-	void getStatus(Player *p);
-	void startMatch();
-	void endMatch();
-	void prepareMatch();
 	void aboutBot(Player *p);
-	void shipChange(Player *p, const char* shipStr);
-	void setLives(Player *p, const char* livesStr);
-	void announce(Player *p);
-
-	Team* playerTeam(Player *p);
-	MatchPlayer* findPlayer(char* playerName);
-	void announceScore();
-	void checkRemainingPlayers(Team* team);
-	void gameEnd();
-	void printScoreBoxTop(char* squadName);
-	void printPlayerData(MatchPlayer p);
-	void printTeamData(Team t);
-
-	void playerKilled(Player* p, Player* k);
-	void playerSpecced(Player* p);
-	void setSpecTimer(Player* p);
-	void setRepelTimer(Player* p);
-	void trackDamage(Player* p, Player* k, int damage);
-	void resetDamage(Player* p);
-	void devalueDamage();
-	Assist* findAssist(Player* p, Player* k);
-	void checkForcedRepel(Player* p);
+	bool closeTo(Player *p, int x, int y, int tolerance);
 
 	char* getSetting(char* setting);
 };

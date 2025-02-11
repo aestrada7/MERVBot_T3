@@ -128,7 +128,7 @@ void botInfo::gotEvent(BotEvent &event)
 			me = (Player*)event.p[1];	// if(me) {/*we are in the arena*/}
 			bool biller_online = *(bool*)&event.p[2];
 
-			botVersion = "0.4.24 (2025/1/16)";
+			botVersion = "0.4.25 (2025/2/11)";
 			botName = "T3 League Bot";
 			botDLL = "leaguebot.dll";
 			botSettings = "leaguebot.ini";
@@ -168,6 +168,7 @@ void botInfo::gotEvent(BotEvent &event)
 			match.countdown = -1;
 			match.timer = -1;
 			match.elapsed = 0;
+			match.id = -1;
 			match.teams[0] = teamA;
 			match.teams[1] = teamB;
 		}
@@ -907,7 +908,7 @@ void botInfo::parseCommand(Player *p, char* command)
 			{
 				if(isMod || isLimited)
 				{
-					announce();
+					announce(p);
 				}
 				else
 				{
@@ -932,6 +933,17 @@ void botInfo::parseCommand(Player *p, char* command)
 				else
 				{
 					Logger::log("Permission denied (not a mod/limited).");
+				}
+			}
+			else if (strcmp(commandName, ".mode") == 0)
+			{
+				if(isMod)
+				{
+					setMode(p, commandArgs);
+				}
+				else
+				{
+					Logger::log("Permission denied (not a mod).");
 				}
 			}
 			else
@@ -1121,6 +1133,30 @@ void botInfo::setFreqs(Player *p, const char* freqStr)
 	sendPrivate(p, out);
 }
 
+void botInfo::setMode(Player *p, const char* modeStr)
+{
+	if(!match.locked)
+	{
+		if(strcmp(modeStr, "-o") == 0)
+		{
+			match.gameType = "Official";
+			Logger::log("Match mode set to official.");
+			sendPrivate(p, "Match mode set to official.");
+		}
+		else
+		{
+			match.gameType = "Unofficial";
+			Logger::log("Match mode set to unofficial.");
+			sendPrivate(p, "Match mode set to unofficial.");
+		}
+	}
+	else
+	{
+		sendPrivate(p, "Match locked, cannot change mode.");
+	}
+}
+
+
 void botInfo::startMatch()
 {
 	if(match.countdown == -1 && !match.locked)
@@ -1169,6 +1205,7 @@ void botInfo::prepareMatch()
 		warpTo(px.player, match.sideBX, match.sideBY);
 	}
 	match.locked = true;
+	match.id = 1; //todo - should be unique and likely retrieved from sqlite
 	Logger::log("Match locked and started!");
 }
 
@@ -1190,6 +1227,7 @@ void botInfo::endMatch()
 	match.countdown = -1;
 	match.timer = -1;
 	match.elapsed = 0;
+	match.id = -1;
 
 	match.damageTracker.clear();
 	sendPublic("*watchdamage 0");
@@ -1339,10 +1377,10 @@ void botInfo::setLives(Player *p, const char* livesStr)
 	}
 }
 
-void botInfo::announce()
+void botInfo::announce(Player *p)
 {
 	char out[255];
-	sprintf(out, "*zone %s vs %s will be held in ?go league", match.teams[0].squad, match.teams[1].squad);
+	sprintf(out, "*zone %s vs %s will be held in ?go league -%s", match.teams[0].squad, match.teams[1].squad, p->name);
 	Logger::log(out);
 	sendPublic(out);
 }
